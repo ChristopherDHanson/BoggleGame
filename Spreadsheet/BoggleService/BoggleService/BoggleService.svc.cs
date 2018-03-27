@@ -9,8 +9,10 @@ namespace Boggle
 {
     public class BoggleService : IBoggleService
     {
-        private readonly Dictionary<string, UserName> users = new Dictionary<string, UserName>();
-        private readonly Dictionary<string, GameStatus> games = new Dictionary<>(string, GameStatus);
+        private readonly Dictionary<string, UserInfo> users = new Dictionary<string, UserInfo>();
+        private readonly Dictionary<string, GameStatus> games = new Dictionary<string, GameStatus>();
+        private UserInfo pendingPlayer;
+
 
         /// <summary>
         /// The most recent call to SetStatus determines the response code used when
@@ -78,18 +80,46 @@ namespace Boggle
             string newGameID = "";
             tkTime.UserToken;
             tkTime.Time;
-            games.Add(newGameID, ??);
+            games.Add(newGameID, );
             return newGameID;
         }
 
         public void CancelJoin(Token userTkn)
         {
-
+            if (!users.ContainsKey(userTkn.UserToken) || userTkn.UserToken.Equals(pendingPlayer.UserToken))
+            {
+                SetStatus(Forbidden);
+            }
+            else if(pendingPlayer != null && userTkn.UserToken.Equals(pendingPlayer.UserToken))
+            {
+                users[userTkn.UserToken].GameStatus = "Registered";
+                pendingPlayer = null;
+                SetStatus(OK);
+            }
         }
 
         public void PlayWord(TokenWord wordToPlay, string gameID)
         {
+            if (wordToPlay.Word == null || wordToPlay.Word.Equals("") || wordToPlay.Word.Trim().Length > 30
+                || !games.ContainsKey(gameID) || !users.ContainsKey(wordToPlay.UserToken) ||
+                users[wordToPlay.UserToken].GameID.Equals(gameID))
+            {
+                SetStatus(Forbidden);
+            }
+            else if (!games[gameID].GameState.Equals("active"))
+            {
+                SetStatus(Conflict);
+            }
+            else
+            {
+//                Otherwise, records the trimmed Word as being played by UserToken in the game identified by GameID.
 
+//                Returns the score for Word in the context of the game(e.g. if Word has been played before the score is zero). 
+//                The word is not case sensitive.
+
+//                Responds with status 200(OK).
+                SetStatus(OK);
+            }
         }
 
         public GameStatus GetAllItems(string isBrief, string userID)
