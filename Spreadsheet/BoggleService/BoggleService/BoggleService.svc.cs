@@ -9,6 +9,9 @@ namespace Boggle
 {
     public class BoggleService : IBoggleService
     {
+        private readonly Dictionary<string, UserName> users = new Dictionary<string, UserName>();
+        private readonly Dictionary<string, GameStatus> games = new Dictionary<>(string, GameStatus);
+
         /// <summary>
         /// The most recent call to SetStatus determines the response code used when
         /// an http response is sent.
@@ -61,6 +64,37 @@ namespace Boggle
                 SetStatus(Forbidden);
                 return null;
             }
+        }
+
+        public string Register(UserName name)
+        {
+            string newUserToken = "";
+            users.Add(newUserToken, name);
+            return newUserToken;
+        }
+
+        public string Join(TokenTime tkTime)
+        {
+            string newGameID = "";
+            tkTime.UserToken;
+            tkTime.Time;
+            games.Add(newGameID, ??);
+            return newGameID;
+        }
+
+        public void CancelJoin(Token userTkn)
+        {
+
+        }
+
+        public void PlayWord(TokenWord wordToPlay, string gameID)
+        {
+
+        }
+
+        public GameStatus GetAllItems(string isBrief, string userID)
+        {
+            return null;
         }
     }
 }
