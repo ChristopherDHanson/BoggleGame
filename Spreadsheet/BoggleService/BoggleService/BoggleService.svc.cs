@@ -145,12 +145,40 @@ namespace Boggle
 
         public void CancelJoin(Token userTkn)
         {
-
+            if (!users.ContainsKey(userTkn.UserToken) || userTkn.UserToken.Equals(pendingPlayer.UserToken))
+            {
+                SetStatus(Forbidden);
+            }
+            else if(pendingPlayer != null && userTkn.UserToken.Equals(pendingPlayer.UserToken))
+            {
+                users[userTkn.UserToken].GameStatus = "Registered";
+                pendingPlayer = null;
+                SetStatus(OK);
+            }
         }
 
         public void PlayWord(TokenWord wordToPlay, string gameID)
         {
+            if (wordToPlay.Word == null || wordToPlay.Word.Equals("") || wordToPlay.Word.Trim().Length > 30
+                || !games.ContainsKey(gameID) || !users.ContainsKey(wordToPlay.UserToken) ||
+                users[wordToPlay.UserToken].GameID.Equals(gameID))
+            {
+                SetStatus(Forbidden);
+            }
+            else if (!games[gameID].GameState.Equals("active"))
+            {
+                SetStatus(Conflict);
+            }
+            else
+            {
+//                Otherwise, records the trimmed Word as being played by UserToken in the game identified by GameID.
 
+//                Returns the score for Word in the context of the game(e.g. if Word has been played before the score is zero). 
+//                The word is not case sensitive.
+
+//                Responds with status 200(OK).
+                SetStatus(OK);
+            }
         }
 
         public GameStatus GetAllItems(string isBrief, string userID)

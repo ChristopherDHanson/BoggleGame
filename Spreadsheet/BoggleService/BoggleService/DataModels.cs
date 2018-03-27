@@ -65,7 +65,7 @@ namespace Boggle
     public class GameStatus
     {
         /// <summary>
-        /// String for current GameState
+        /// Registered if not in a game. Pending if looking for game. Active if in game. Completed if finished game.
         /// </summary>
         public string GameState { get; set; }
 
@@ -83,6 +83,10 @@ namespace Boggle
         /// Time left in current game.
         /// </summary>
         public int TimeLeft { get; set; }
+
+        public PlayerStatus PlayerOne { get; set; }
+
+        public PlayerStatus PlayerTwo { get; set; }
     }
 
     /// <summary>
@@ -124,10 +128,30 @@ namespace Boggle
 
     public class UserInfo
     {
-        public string Nickname { get; set; }
-
+        /// <summary>
+        /// Token of user playing word
+        /// </summary>
         public string UserToken { get; set; }
 
+        /// <summary>
+        /// Nickname of the user
+        /// </summary>
+        public string Nickname { get; set; }
+
+        /// <summary>
+        /// Registered if not in a game. Pending if looking for game. Active if in game. Completed if finished game.
+        /// </summary>
         public string GameStatus { get; set; }
+
+        public string GameID { get; set; }
+    }
+
+    public class Game
+    {
+        public Token PlayerOne { get; set; }
+        public Token PlayerTwo { get; set; }
+        public string GameID { get; set; }
+        public BoggleBoard GameBoard { get; set; }
+        public GameStatus GameStatus { get; set; }
     }
 }
