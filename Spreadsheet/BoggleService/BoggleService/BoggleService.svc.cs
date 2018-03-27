@@ -9,8 +9,12 @@ namespace Boggle
 {
     public class BoggleService : IBoggleService
     {
-        private readonly Dictionary<string, UserName> users = new Dictionary<string, UserName>();
-        private readonly Dictionary<string, GameStatus> games = new Dictionary<>(string, GameStatus);
+        private readonly Dictionary<string, UserInfo> users = new Dictionary<string, UserInfo>();
+        private readonly Dictionary<string, Game> games = new Dictionary<string, Game>();
+        private UserInfo pendingPlayer;
+        private int gameCounter = 0;
+        private string pendingGameID = 0;
+        private bool gameIsPending = false;
 
         /// <summary>
         /// The most recent call to SetStatus determines the response code used when
@@ -66,20 +70,77 @@ namespace Boggle
             }
         }
 
+        /// <summary>
+        /// Register new user
+        /// </summary>
+        /// <param name="name">Contains Nickname</param>
+        /// <returns>Returns user token</returns>
         public string Register(UserName name)
         {
-            string newUserToken = "";
-            users.Add(newUserToken, name);
-            return newUserToken;
+            string theName = name.Nickname;
+            if (theName == null)
+            {
+                SetStatus(Forbidden);
+                return null;
+            }
+            theName = theName.Trim();
+            if (theName.Length == 0 || theName.Length > 50)
+            {
+                SetStatus(Forbidden);
+                return null;
+            }
+            else {
+                string newUserToken = Guid.NewGuid().ToString();
+                UserInfo newUser = new UserInfo();
+                newUser.Nickname = theName;
+                newUser.GameStatus = "Registered";
+                newUser.UserToken = newUserToken;
+                users.Add(newUserToken, newUser);
+                SetStatus(Created);
+                return newUserToken;
+            }
         }
 
+        /// <summary>
+        /// Join new game
+        /// </summary>
+        /// <param name="tkTime">Contains UserToken and desired TimeLimit</param>
+        /// <returns>Returns new GameID</returns>
         public string Join(TokenTime tkTime)
         {
-            string newGameID = "";
-            tkTime.UserToken;
-            tkTime.Time;
-            games.Add(newGameID, ??);
-            return newGameID;
+            if (!gameIsPending)
+            {
+                string newGameID = gameCounter.ToString();
+                pendingGameID = newGameID;
+                gameCounter++;
+                Game newGame = new Game();
+                GameStatus newGameStatus = new GameStatus();
+                games.Add(newGameID, newGame);
+                gameIsPending = true;
+            }
+
+            if (!users.ContainsKey(tkTime.UserToken) || tkTime.TimeLimit < 5 || tkTime.TimeLimit > 120)
+            {
+                SetStatus(Forbidden);
+                return null;
+            }
+            else if (pendingPlayer != null && pendingPlayer.UserToken.Equals(tkTime.UserToken))
+            {
+                SetStatus(Conflict);
+                return null;
+            }
+            else if (pendingPlayer == null) {
+                users[tkTime.UserToken] = pendingPlayer;
+                newGame.TimeLimit = tkTime.TimeLimit;
+                return newGameID;
+            }
+            else // Two players, match begins
+            {
+                newGame.TimeLimit = (tkTime.TimeLimit + newGame.TimeLimit) / 2;
+                games.Add(newGameID, newGame);
+                gameIsPending = false;
+                return newGameID;
+            }
         }
 
         public void CancelJoin(Token userTkn)
