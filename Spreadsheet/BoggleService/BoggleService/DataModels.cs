@@ -65,7 +65,7 @@ namespace Boggle
     public class GameStatus
     {
         /// <summary>
-        /// Registered if not in a game. Pending if looking for game. Active if in game. Completed if finished game.
+        /// Pending if looking for game. Active if in game. Completed if finished game.
         /// </summary>
         public string GameState { get; set; }
 
@@ -84,9 +84,9 @@ namespace Boggle
         /// </summary>
         public int TimeLeft { get; set; }
 
-        public PlayerStatus PlayerOne { get; set; }
+        public PlayerStatus Player1 { get; set; }
 
-        public PlayerStatus PlayerTwo { get; set; }
+        public PlayerStatus Player2 { get; set; }
     }
 
     /// <summary>
@@ -148,8 +148,8 @@ namespace Boggle
 
     public class Game
     {
-        public Token PlayerOne { get; set; }
-        public Token PlayerTwo { get; set; }
+        public string Player1Token { get; set; }
+        public string Player2Token { get; set; }
         public string GameID { get; set; }
         public BoggleBoard GameBoard { get; set; }
         public GameStatus GameStatus { get; set; }

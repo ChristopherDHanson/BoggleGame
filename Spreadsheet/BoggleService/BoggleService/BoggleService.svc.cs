@@ -13,7 +13,7 @@ namespace Boggle
         private readonly Dictionary<string, Game> games = new Dictionary<string, Game>();
         private UserInfo pendingPlayer;
         private int gameCounter = 0;
-        private string pendingGameID = 0;
+        private string pendingGameID;
         private bool gameIsPending = false;
 
         /// <summary>
@@ -109,14 +109,24 @@ namespace Boggle
         public string Join(TokenTime tkTime)
         {
             if (!gameIsPending)
-            {
-                string newGameID = gameCounter.ToString();
-                pendingGameID = newGameID;
-                gameCounter++;
+            { // Creates a new pending game if none exists
                 Game newGame = new Game();
-                GameStatus newGameStatus = new GameStatus();
-                games.Add(newGameID, newGame);
+                newGame.Player1Token = tkTime.UserToken;
+                pendingGameID = gameCounter.ToString();
+                newGame.GameID = pendingGameID;
+
+                newGame.GameStatus = new GameStatus();
+                newGame.GameStatus.GameState = "Pending";
+                newGame.GameStatus.Player1 = new PlayerStatus();
+                newGame.GameStatus.Player1.Nickname = users[tkTime.UserToken].Nickname;
+                newGame.GameStatus.Player1.Score = 0;
+
+                newGame.GameBoard = new BoggleBoard();
+                newGame.GameStatus.Board = newGame.GameBoard.ToString();
+
                 gameIsPending = true;
+                gameCounter++;
+                games.Add(pendingGameID, newGame);
             }
 
             if (!users.ContainsKey(tkTime.UserToken) || tkTime.TimeLimit < 5 || tkTime.TimeLimit > 120)
@@ -124,25 +134,37 @@ namespace Boggle
                 SetStatus(Forbidden);
                 return null;
             }
-            else if (pendingPlayer != null && pendingPlayer.UserToken.Equals(tkTime.UserToken))
+            else if (pendingPlayer != null && pendingPlayer.UserToken.Equals(tkTime.UserToken)) // This user is already pending
             {
                 SetStatus(Conflict);
                 return null;
             }
-            else if (pendingPlayer == null) {
-                users[tkTime.UserToken] = pendingPlayer;
-                newGame.TimeLimit = tkTime.TimeLimit;
-                return newGameID;
+
+            else if (pendingPlayer == null) { // No pending player exists; this user becomes pending player
+                pendingPlayer = users[tkTime.UserToken];
+                games[pendingGameID].GameStatus.TimeLimit = tkTime.TimeLimit;
+                SetStatus(Accepted);
+                return pendingGameID;
             }
-            else // Two players, match begins
+            else // Second player found, match begins
             {
-                newGame.TimeLimit = (tkTime.TimeLimit + newGame.TimeLimit) / 2;
-                games.Add(newGameID, newGame);
+                games[pendingGameID].GameStatus.TimeLimit = (tkTime.TimeLimit + games[pendingGameID].GameStatus.TimeLimit) / 2;
+                games[pendingGameID].GameStatus.GameState = "Active";
+
+                games[pendingGameID].Player2Token = tkTime.UserToken;
+                games[pendingGameID].GameStatus.Player2.Nickname = users[tkTime.UserToken].Nickname;
+                games[pendingGameID].GameStatus.Player2.Score = 0;
+
                 gameIsPending = false;
-                return newGameID;
+                SetStatus(Created);
+                return pendingGameID;
             }
         }
 
+        /// <summary>
+        /// Cancels Join request if user is still in pending game
+        /// </summary>
+        /// <param name="userTkn">Contains UserToken</param>
         public void CancelJoin(Token userTkn)
         {
             if (!users.ContainsKey(userTkn.UserToken) || userTkn.UserToken.Equals(pendingPlayer.UserToken))
@@ -150,8 +172,11 @@ namespace Boggle
                 SetStatus(Forbidden);
             }
             else if(pendingPlayer != null && userTkn.UserToken.Equals(pendingPlayer.UserToken))
-            {
+            { // Change user status in UserInfo, remove pending game
                 users[userTkn.UserToken].GameStatus = "Registered";
+                games.Remove(pendingGameID);
+                pendingGameID = null;
+                gameIsPending = false;
                 pendingPlayer = null;
                 SetStatus(OK);
             }
@@ -165,7 +190,7 @@ namespace Boggle
             {
                 SetStatus(Forbidden);
             }
-            else if (!games[gameID].GameState.Equals("active"))
+            else if (!games[gameID].GameStatus.GameState.Equals("active"))
             {
                 SetStatus(Conflict);
             }
