@@ -94,7 +94,7 @@ namespace Boggle
                 string newUserToken = Guid.NewGuid().ToString();
                 UserInfo newUser = new UserInfo();
                 newUser.Nickname = theName;
-                newUser.GameStatus = "Registered";
+                newUser.GameStatus = "registered";
                 newUser.UserToken = newUserToken;
                 users.Add(newUserToken, newUser);
                 SetStatus(Created);
@@ -117,7 +117,7 @@ namespace Boggle
                 newGame.GameID = pendingGameID;
 
                 newGame.GameStatus = new GameStatus();
-                newGame.GameStatus.GameState = "Pending";
+                newGame.GameStatus.GameState = "pending";
                 newGame.GameStatus.Player1 = new PlayerStatus();
                 newGame.GameStatus.Player1.Nickname = users[tkTime.UserToken].Nickname;
                 newGame.GameStatus.Player1.Score = 0;
@@ -150,7 +150,7 @@ namespace Boggle
             else // Second player found, match begins
             {
                 games[pendingGameID].GameStatus.TimeLimit = (tkTime.TimeLimit + games[pendingGameID].GameStatus.TimeLimit) / 2;
-                games[pendingGameID].GameStatus.GameState = "Active";
+                games[pendingGameID].GameStatus.GameState = "active";
 
                 games[pendingGameID].Player2Token = tkTime.UserToken;
                 games[pendingGameID].GameStatus.Player2.Nickname = users[tkTime.UserToken].Nickname;
@@ -174,7 +174,7 @@ namespace Boggle
             }
             else if(pendingPlayer != null && userTkn.UserToken.Equals(pendingPlayer.UserToken))
             { // Change user status in UserInfo, remove pending game
-                users[userTkn.UserToken].GameStatus = "Registered";
+                users[userTkn.UserToken].GameStatus = "registered";
                 games.Remove(pendingGameID);
                 pendingGameID = null;
                 gameIsPending = false;
@@ -200,30 +200,54 @@ namespace Boggle
             {
                 SetStatus(Conflict);
             }
-            else
+            else // Word will be successfully played
             {
                 //                Otherwise, records the trimmed Word as being played by UserToken in the game identified by GameID.
                 //                Returns the score for Word in the context of the game(e.g. if Word has been played before the score is zero). 
                 //                The word is not case sensitive.
+                string theWord = wordToPlay.Word.Trim();
+                string theToken = wordToPlay.UserToken;
 
-                if (games[users[wordToPlay.UserToken].GameID].GameBoard.CanBeFormed(wordToPlay.Word.Trim())) //+its in dictionary and if it has not been played before
+                if (games[gameID].GameBoard.CanBeFormed(theWord)) //+its in dictionary and if it has not been played before
                 {
                     //add to words played and increment point 
+                    if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
+                    {
+                        games[gameID].GameStatus.Player1.Score++;
+                        games[gameID].GameStatus.Player1.WordsPlayed.Add(new WordScore(theWord, 1));
+                    }
+                    else // user is Player2
+                    {
+                        games[gameID].GameStatus.Player2.Score++;
+                        games[gameID].GameStatus.Player2.WordsPlayed.Add(new WordScore(theWord, 1));
+                    }
                 }
-                else if (true)//if+its in dictionary and if it has been played before
+                else if (games[gameID].GameBoard.CanBeFormed(theWord))//if+its in dictionary and if it has been played before
                 {
                     //add to words played with 0 points
+                    if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
+                    {
+                        games[gameID].GameStatus.Player1.WordsPlayed.Add(new WordScore(theWord, 0));
+                    }
+                    else // user is Player2
+                    {
+                        games[gameID].GameStatus.Player2.WordsPlayed.Add(new WordScore(theWord, 0));
+                    }
                 }
-                else
+                else // Invalid word played
                 {
                     //add to words played and decrement a point
+                    if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
+                    {
+                        games[gameID].GameStatus.Player1.Score--;
+                        games[gameID].GameStatus.Player1.WordsPlayed.Add(new WordScore(theWord, -1));
+                    }
+                    else // user is Player2
+                    {
+                        games[gameID].GameStatus.Player2.Score--;
+                        games[gameID].GameStatus.Player2.WordsPlayed.Add(new WordScore(theWord, -1));
+                    }
                 }
-
-                //update player status
-                //update game status
-                //update Game
-
-
 
                 //                Responds with status 200(OK).
                 SetStatus(OK);
@@ -231,13 +255,17 @@ namespace Boggle
         }
 
         /// <summary>
-        /// Gets all
+        /// Gets and returns the GameStatus of specified game
         /// </summary>
-        /// <param name="isBrief"></param>
-        /// <param name="userID"></param>
-        /// <returns></returns>
+        /// <param name="GameID">The GameID of target Game</param>
+        /// <param name="isBrief">"yes" = brief, anything else = not brief</param>
         public GameStatus GetStatus(string GameID, string isBrief)
         {
+            if (!games.ContainsKey(GameID))
+            {
+                SetStatus(Forbidden);
+                return null;
+            }
             if (games[GameID].GameStatus.Equals("pending"))
             {
                 SetStatus(OK);
@@ -255,8 +283,7 @@ namespace Boggle
                 //                },
                 SetStatus(OK);
             }
-            else if (games[GameID].GameStatus.Equals("active") &&
-                     !isBrief.Equals("yes"))
+            else if (games[GameID].GameStatus.Equals("active") && !isBrief.Equals("yes"))
             {
 //                "GameState": "active",
 //                "Board": "ANETIXSRETAPLMON",
@@ -272,8 +299,7 @@ namespace Boggle
 //                },
                 SetStatus(OK);
             }
-            else if (games[GameID].GameStatus.Equals("completed") &&
-                     !isBrief.Equals("yes"))
+            else if (games[GameID].GameStatus.Equals("completed") && !isBrief.Equals("yes"))
             {
 //                "GameState": "completed",
 //                "Board": "ANETIXSRETAPLMON",

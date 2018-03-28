@@ -1,8 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-
+﻿using System.Collections.Generic;
+/// <summary>
+/// Contains variety of classes that represent objects that come in
+/// the header of requests to server. Also contains classes representing
+/// object types to be returned.
+/// </summary>
 namespace Boggle
 {
     /// <summary>
@@ -107,7 +108,7 @@ namespace Boggle
         /// <summary>
         /// Returns an array of WordScore pairs
         /// </summary>
-        public WordScore[] WordsPlayer { get; set; }
+        public IList<WordScore> WordsPlayed { get; set; }
     }
 
     /// <summary>
@@ -115,6 +116,15 @@ namespace Boggle
     /// </summary>
     public class WordScore
     {
+        /// <summary>
+        /// Creates new WordScore with specified word and score
+        /// </summary>
+        public WordScore(string word, int score)
+        {
+            Word = word;
+            Score = score;
+        }
+
         /// <summary>
         /// Word played
         /// </summary>
@@ -126,6 +136,10 @@ namespace Boggle
         public int Score { get; set; }
     }
 
+    /// <summary>
+    /// Used in dictionary
+    /// NOTE: MAY POSSIBLY MAYBE PERHAPS BE UNNECESSARY; USE TOKEN, NICKNAME PAIR IN DICT.
+    /// </summary>
     public class UserInfo
     {
         /// <summary>
@@ -146,6 +160,9 @@ namespace Boggle
         public string GameID { get; set; }
     }
 
+    /// <summary>
+    /// Used to store data about games in dictionary in service class
+    /// </summary>
     public class Game
     {
         public string Player1Token { get; set; }
