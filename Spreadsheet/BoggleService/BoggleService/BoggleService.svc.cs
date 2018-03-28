@@ -202,7 +202,66 @@ namespace Boggle
 
         public GameStatus GetAllItems(string isBrief, string userID)
         {
-                //to be modified
+            if (users[userID].GameStatus.Equals("pending"))
+            {
+                SetStatus(OK);
+            }
+            else if ((users[userID].GameStatus.Equals("active") || users[userID].GameStatus.Equals("completed")) &&
+                     isBrief.Equals("yes"))
+            {
+                //                "GameState": "active",                   
+                //                "TimeLeft": 32,                           
+                //                "Player1": {
+                //                    "Score": 3,
+                //                },
+                //                "Player2": {
+                //                    "Score": 1,
+                //                },
+                SetStatus(OK);
+            }
+            else if (users[userID].GameStatus.Equals("active") &&
+                     !isBrief.Equals("yes"))
+            {
+//                "GameState": "active",
+//                "Board": "ANETIXSRETAPLMON",
+//                "TimeLimit": 120,
+//                "TimeLeft": 32,
+//                "Player1": {
+//                    "Nickname": "Jack",
+//                    "Score": 3,
+//                },
+//                "Player2": {
+//                    "Nickname": "Jill",
+//                    "Score": 1,
+//                },
+                SetStatus(OK);
+            }
+            else if (users[userID].GameStatus.Equals("completed") &&
+                     !isBrief.Equals("yes"))
+            {
+//                "GameState": "completed",
+//                "Board": "ANETIXSRETAPLMON",
+//                "TimeLimit": 120,
+//                "TimeLeft": 0,
+//                "Player1": {
+//                    "Nickname": "Jack",
+//                    "Score": 3,
+//                    "WordsPlayed": [
+//                    {"Word": "tine", "Score": 1},
+//                    {"Word": "strap", "Score": 2} 
+//                    ],
+//                },
+//                "Player2": {
+//                    "Nickname": "Jill",
+//                    "Score": 1,
+//                    "WordsPlayed": [
+//                    {"Word": "tin", "Score": 1}
+//                    ],
+//                },
+                SetStatus(OK);
+            }
+
+            //to be modified
                 return games[users[userID].GameID].GameStatus;
         }
     }
