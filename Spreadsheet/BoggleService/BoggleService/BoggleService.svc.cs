@@ -257,62 +257,42 @@ namespace Boggle
             }
             if (games[GameID].GameStatus.Equals("pending"))
             {
+                GamePending pending  =  new GamePending();
+                pending.GameState = games[GameID].GameStatus.GameState;
                 SetStatus(OK);
+
+                return pending;
             }
-            else if ((games[GameID].GameStatus.Equals("active") || games[GameID].GameStatus.Equals("completed")) &&
+
+            if ((games[GameID].GameStatus.Equals("active") || games[GameID].GameStatus.Equals("completed")) &&
                      isBrief.Equals("yes"))
             {
-                //                "GameState": "active",                   
-                //                "TimeLeft": 32,                           
-                //                "Player1": {
-                //                    "Score": 3,
-                //                },
-                //                "Player2": {
-                //                    "Score": 1,
-                //                },
+                GameFull activeCompleteBrief = new GameFull();
+                activeCompleteBrief.GameState = games[GameID].GameStatus.GameState;
+                activeCompleteBrief.TimeLeft = games[GameID].GameStatus.TimeLeft;
+                activeCompleteBrief.Player1 = games[GameID].GameStatus.Player1;
+                activeCompleteBrief.Player2 = games[GameID].GameStatus.Player2;
                 SetStatus(OK);
+                return activeCompleteBrief;
             }
-            else if (games[GameID].GameStatus.Equals("active") && !isBrief.Equals("yes"))
+
+            if (games[GameID].GameStatus.Equals("active") && !isBrief.Equals("yes"))
             {
-//                "GameState": "active",
-//                "Board": "ANETIXSRETAPLMON",
-//                "TimeLimit": 120,
-//                "TimeLeft": 32,
-//                "Player1": {
-//                    "Nickname": "Jack",
-//                    "Score": 3,
-//                },
-//                "Player2": {
-//                    "Nickname": "Jill",
-//                    "Score": 1,
-//                },
+                GameActiveBrief activeBrief = new GameActiveBrief();
+                activeBrief.GameState = games[GameID].GameStatus.GameState;
+                activeBrief.TimeLeft = games[GameID].GameStatus.TimeLeft;
+                activeBrief.TimeLimit = games[GameID].GameStatus.TimeLimit;
+                activeBrief.Player1 = games[GameID].GameStatus.Player1;
+                activeBrief.Player2 = games[GameID].GameStatus.Player2;
                 SetStatus(OK);
+                return activeBrief;
             }
-            else if (games[GameID].GameStatus.Equals("completed") && !isBrief.Equals("yes"))
-            {
-//                "GameState": "completed",
-//                "Board": "ANETIXSRETAPLMON",
-//                "TimeLimit": 120,
-//                "TimeLeft": 0,
-//                "Player1": {
-//                    "Nickname": "Jack",
-//                    "Score": 3,
-//                    "WordsPlayed": [
-//                    {"Word": "tine", "Score": 1},
-//                    {"Word": "strap", "Score": 2} 
-//                    ],
-//                },
-//                "Player2": {
-//                    "Nickname": "Jill",
-//                    "Score": 1,
-//                    "WordsPlayed": [
-//                    {"Word": "tin", "Score": 1}
-//                    ],
-//                },
+
+            if (games[GameID].GameStatus.Equals("completed") && !isBrief.Equals("yes"))
+            {         
                 SetStatus(OK);
             }
 
-            //to be modified
             return games[GameID].GameStatus;
         }
 
