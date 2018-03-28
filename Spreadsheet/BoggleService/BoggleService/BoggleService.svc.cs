@@ -257,7 +257,7 @@ namespace Boggle
             }
             if (games[GameID].GameStatus.Equals("pending"))
             {
-                GamePending pending  =  new GamePending();
+                GameStatus pending  =  new GamePending();
                 pending.GameState = games[GameID].GameStatus.GameState;
                 SetStatus(OK);
 
@@ -267,7 +267,7 @@ namespace Boggle
             if ((games[GameID].GameStatus.Equals("active") || games[GameID].GameStatus.Equals("completed")) &&
                      isBrief.Equals("yes"))
             {
-                GameFull activeCompleteBrief = new GameFull();
+                GameStatus activeCompleteBrief = new GameFull();
                 activeCompleteBrief.GameState = games[GameID].GameStatus.GameState;
                 activeCompleteBrief.TimeLeft = games[GameID].GameStatus.TimeLeft;
                 activeCompleteBrief.Player1 = games[GameID].GameStatus.Player1;
@@ -278,7 +278,7 @@ namespace Boggle
 
             if (games[GameID].GameStatus.Equals("active") && !isBrief.Equals("yes"))
             {
-                GameActiveBrief activeBrief = new GameActiveBrief();
+                GameStatus activeBrief = new GameActiveBrief();
                 activeBrief.GameState = games[GameID].GameStatus.GameState;
                 activeBrief.TimeLeft = games[GameID].GameStatus.TimeLeft;
                 activeBrief.TimeLimit = games[GameID].GameStatus.TimeLimit;

@@ -88,7 +88,8 @@ namespace Boggle
         public void TestMethod2()
         {
             dynamic users = new ExpandoObject();
-            Response r = client.DoPostAsync("POST", users);
+            users.Nickname = "Jeb";
+            Response r = client.DoPostAsync("users", users).Result;
             Assert.AreEqual(Created, r.Status);
         }
 
