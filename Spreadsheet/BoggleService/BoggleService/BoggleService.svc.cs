@@ -15,6 +15,7 @@ namespace Boggle
         private int gameCounter = 0;
         private string pendingGameID;
         private bool gameIsPending = false;
+        private HashSet<string> dictionaryWords; // words that are valid inputs
 
         /// <summary>
         /// The most recent call to SetStatus determines the response code used when
@@ -182,11 +183,16 @@ namespace Boggle
             }
         }
 
+        /// <summary>
+        /// Plays a word in specified game of Boggle
+        /// </summary>
+        /// <param name="wordToPlay">Contains UserToken and Word</param>
+        /// <param name="gameID">The GameID of target game</param>
         public void PlayWord(TokenWord wordToPlay, string gameID)
         {
             if (wordToPlay.Word == null || wordToPlay.Word.Equals("") || wordToPlay.Word.Trim().Length > 30
                 || !games.ContainsKey(gameID) || !users.ContainsKey(wordToPlay.UserToken) ||
-                users[wordToPlay.UserToken].GameID.Equals(gameID))
+                !users[wordToPlay.UserToken].GameID.Equals(gameID))
             {
                 SetStatus(Forbidden);
             }
@@ -196,19 +202,103 @@ namespace Boggle
             }
             else
             {
-//                Otherwise, records the trimmed Word as being played by UserToken in the game identified by GameID.
+                //                Otherwise, records the trimmed Word as being played by UserToken in the game identified by GameID.
+                //                Returns the score for Word in the context of the game(e.g. if Word has been played before the score is zero). 
+                //                The word is not case sensitive.
 
-//                Returns the score for Word in the context of the game(e.g. if Word has been played before the score is zero). 
-//                The word is not case sensitive.
+                if (games[users[wordToPlay.UserToken].GameID].GameBoard.CanBeFormed(wordToPlay.Word.Trim())) //+its in dictionary and if it has not been played before
+                {
+                    //add to words played and increment point 
+                }
+                else if (true)//if+its in dictionary and if it has been played before
+                {
+                    //add to words played with 0 points
+                }
+                else
+                {
+                    //add to words played and decrement a point
+                }
 
-//                Responds with status 200(OK).
+                //update player status
+                //update game status
+                //update Game
+
+
+
+                //                Responds with status 200(OK).
                 SetStatus(OK);
             }
         }
 
-        public GameStatus GetAllItems(string isBrief, string userID)
+        /// <summary>
+        /// Gets all
+        /// </summary>
+        /// <param name="isBrief"></param>
+        /// <param name="userID"></param>
+        /// <returns></returns>
+        public GameStatus GetStatus(string GameID, string isBrief)
         {
-            return null;
+            if (games[GameID].GameStatus.Equals("pending"))
+            {
+                SetStatus(OK);
+            }
+            else if ((games[GameID].GameStatus.Equals("active") || games[GameID].GameStatus.Equals("completed")) &&
+                     isBrief.Equals("yes"))
+            {
+                //                "GameState": "active",                   
+                //                "TimeLeft": 32,                           
+                //                "Player1": {
+                //                    "Score": 3,
+                //                },
+                //                "Player2": {
+                //                    "Score": 1,
+                //                },
+                SetStatus(OK);
+            }
+            else if (games[GameID].GameStatus.Equals("active") &&
+                     !isBrief.Equals("yes"))
+            {
+//                "GameState": "active",
+//                "Board": "ANETIXSRETAPLMON",
+//                "TimeLimit": 120,
+//                "TimeLeft": 32,
+//                "Player1": {
+//                    "Nickname": "Jack",
+//                    "Score": 3,
+//                },
+//                "Player2": {
+//                    "Nickname": "Jill",
+//                    "Score": 1,
+//                },
+                SetStatus(OK);
+            }
+            else if (games[GameID].GameStatus.Equals("completed") &&
+                     !isBrief.Equals("yes"))
+            {
+//                "GameState": "completed",
+//                "Board": "ANETIXSRETAPLMON",
+//                "TimeLimit": 120,
+//                "TimeLeft": 0,
+//                "Player1": {
+//                    "Nickname": "Jack",
+//                    "Score": 3,
+//                    "WordsPlayed": [
+//                    {"Word": "tine", "Score": 1},
+//                    {"Word": "strap", "Score": 2} 
+//                    ],
+//                },
+//                "Player2": {
+//                    "Nickname": "Jill",
+//                    "Score": 1,
+//                    "WordsPlayed": [
+//                    {"Word": "tin", "Score": 1}
+//                    ],
+//                },
+                SetStatus(OK);
+            }
+
+            //to be modified
+            return games[GameID].GameStatus;
         }
     }
 }
