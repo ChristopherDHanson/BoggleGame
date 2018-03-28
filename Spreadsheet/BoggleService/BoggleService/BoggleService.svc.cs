@@ -9,7 +9,7 @@ namespace Boggle
 {
     public class BoggleService : IBoggleService
     {
-        private readonly Dictionary<string, UserInfo> users = new Dictionary<string, UserInfo>();
+        private readonly Dictionary<string, UserName> users = new Dictionary<string, UserName>();
         private readonly Dictionary<string, Game> games = new Dictionary<string, Game>();
         private int gameCounter = 0;
         private string pendingGameID;
@@ -91,11 +91,7 @@ namespace Boggle
             }
             else {
                 string newUserToken = Guid.NewGuid().ToString();
-                UserInfo newUser = new UserInfo();
-                newUser.Nickname = theName;
-                newUser.GameStatus = "registered";
-                newUser.UserToken = newUserToken;
-                users.Add(newUserToken, newUser);
+                users.Add(newUserToken, name);
                 SetStatus(Created);
                 return newUserToken;
             }
@@ -168,8 +164,7 @@ namespace Boggle
                 SetStatus(Forbidden);
             }
             else if(gameIsPending && userTkn.UserToken.Equals(games[pendingGameID].Player1Token))
-            { // Change user status in UserInfo, remove pending game
-                users[userTkn.UserToken].GameStatus = "registered";
+            { // Remove pending game
                 games.Remove(pendingGameID);
                 pendingGameID = null;
                 gameIsPending = false;
@@ -186,7 +181,7 @@ namespace Boggle
         {
             if (wordToPlay.Word == null || wordToPlay.Word.Equals("") || wordToPlay.Word.Trim().Length > 30
                 || !games.ContainsKey(gameID) || !users.ContainsKey(wordToPlay.UserToken) ||
-                !users[wordToPlay.UserToken].GameID.Equals(gameID))
+                (!games[gameID].Player1Token.Equals(wordToPlay.UserToken) && !games[gameID].Player2Token.Equals(wordToPlay.UserToken)))
             {
                 SetStatus(Forbidden);
             }

@@ -137,30 +137,6 @@ namespace Boggle
     }
 
     /// <summary>
-    /// Used in dictionary
-    /// NOTE: MAY POSSIBLY MAYBE PERHAPS BE UNNECESSARY; USE TOKEN, NICKNAME PAIR IN DICT.
-    /// </summary>
-    public class UserInfo
-    {
-        /// <summary>
-        /// Token of user playing word
-        /// </summary>
-        public string UserToken { get; set; }
-
-        /// <summary>
-        /// Nickname of the user
-        /// </summary>
-        public string Nickname { get; set; }
-
-        /// <summary>
-        /// Registered if not in a game. Pending if looking for game. Active if in game. Completed if finished game.
-        /// </summary>
-        public string GameStatus { get; set; }
-
-        public string GameID { get; set; }
-    }
-
-    /// <summary>
     /// Used to store data about games in dictionary in service class
     /// </summary>
     public class Game
