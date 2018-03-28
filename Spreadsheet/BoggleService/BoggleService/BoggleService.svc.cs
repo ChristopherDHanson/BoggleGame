@@ -194,10 +194,10 @@ namespace Boggle
                 //                Otherwise, records the trimmed Word as being played by UserToken in the game identified by GameID.
                 //                Returns the score for Word in the context of the game(e.g. if Word has been played before the score is zero). 
                 //                The word is not case sensitive.
-                string theWord = wordToPlay.Word.Trim();
+                string theWord = wordToPlay.Word.Trim().ToLower();
                 string theToken = wordToPlay.UserToken;
 
-                if (games[gameID].GameBoard.CanBeFormed(theWord)) //+its in dictionary and if it has not been played before
+                if (games[gameID].GameBoard.CanBeFormed(theWord) && dictionaryWords.Contains(theWord)) //+word has not been played
                 {
                     //add to words played and increment point 
                     if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
@@ -211,7 +211,7 @@ namespace Boggle
                         games[gameID].GameStatus.Player2.WordsPlayed.Add(new WordScore(theWord, 1));
                     }
                 }
-                else if (games[gameID].GameBoard.CanBeFormed(theWord))//if+its in dictionary and if it has been played before
+                else if (games[gameID].GameBoard.CanBeFormed(theWord) && dictionaryWords.Contains(theWord)) //+word has played
                 {
                     //add to words played with 0 points
                     if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
