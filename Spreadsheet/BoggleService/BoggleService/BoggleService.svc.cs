@@ -197,7 +197,7 @@ namespace Boggle
                 string theWord = wordToPlay.Word.Trim().ToLower();
                 string theToken = wordToPlay.UserToken;
 
-                if (games[gameID].GameBoard.CanBeFormed(theWord) && dictionaryWords.Contains(theWord)) //+word has not been played
+                if (games[gameID].GameBoard.CanBeFormed(theWord) && dictionaryWords.Contains(theWord) && !HasBeenPlayed(wordToPlay.UserToken, gameID, wordToPlay.Word)) //+its in dictionary and if it has not been played before
                 {
                     //add to words played and increment point 
                     if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
@@ -211,7 +211,7 @@ namespace Boggle
                         games[gameID].GameStatus.Player2.WordsPlayed.Add(new WordScore(theWord, 1));
                     }
                 }
-                else if (games[gameID].GameBoard.CanBeFormed(theWord) && dictionaryWords.Contains(theWord)) //+word has played
+                else if (games[gameID].GameBoard.CanBeFormed(theWord) && HasBeenPlayed(wordToPlay.UserToken, gameID, wordToPlay.Word))//if+its in dictionary and if it has been played before
                 {
                     //add to words played with 0 points
                     if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
@@ -238,7 +238,7 @@ namespace Boggle
                     }
                 }
 
-                //                Responds with status 200(OK).
+                // Responds with status 200(OK).
                 SetStatus(OK);
             }
         }
@@ -314,6 +314,34 @@ namespace Boggle
 
             //to be modified
             return games[GameID].GameStatus;
+        }
+
+        private bool HasBeenPlayed(string userToken, string gameID, string targetWord)
+        {
+            IList<WordScore> tempList;
+
+            if (games[gameID].Player1Token.Equals(userToken))
+            {
+                tempList = games[gameID].GameStatus.Player1.WordsPlayed;
+
+                foreach (WordScore word in tempList)
+                {
+                    if (word.Word.Equals(targetWord))
+                        return true;
+                }
+            }
+            else
+            {
+                tempList = games[gameID].GameStatus.Player2.WordsPlayed;
+
+                foreach (WordScore word in tempList)
+                {
+                    if (word.Word.Equals(targetWord))
+                        return true;
+                }
+            }
+
+            return false;
         }
     }
 }
