@@ -44,6 +44,11 @@ namespace Boggle
         public string UserToken { get; set; }
     }
 
+    public class ScoreOnly
+    {
+        public int Score { get; set; }
+    }
+
     /// <summary>
     /// Used in Play Word Request
     /// </summary>

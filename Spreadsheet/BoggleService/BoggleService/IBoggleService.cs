@@ -46,7 +46,7 @@ namespace Boggle
         /// Plays a word
         /// </summary>
         [WebInvoke(Method = "PUT", UriTemplate = "/games/{GameID}")]
-        void PlayWord(TokenWord word, string GameID);
+        ScoreOnly PlayWord(TokenWord word, string GameID);
 
         /// <summary>
         /// Gets game status update
