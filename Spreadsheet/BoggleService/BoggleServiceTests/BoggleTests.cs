@@ -85,7 +85,7 @@ namespace Boggle
         }
 
         [TestMethod]
-        public void TestMethod2()
+        public void TestBasicRegister()
         {
             dynamic users = new ExpandoObject();
             users.Nickname = "Jeb";
@@ -94,111 +94,101 @@ namespace Boggle
         }
 
         [TestMethod]
-        public void TestMethod3()
+        public void TestRegisterLongName()
         {
-
+            dynamic users = new ExpandoObject();
+            users.Nickname = "Llanfairpwllgwyngyllgogerychwyrndrobwllllantysiliogogogoch";
+            Response r = client.DoPostAsync("users", users).Result;
+            Assert.AreEqual(Forbidden, r.Status);
         }
 
         [TestMethod]
-        public void TestMethod4()
+        public void TestRegisterEmptyName()
         {
-
+            dynamic users = new ExpandoObject();
+            users.Nickname = "";
+            Response r = client.DoPostAsync("users", users).Result;
+            Assert.AreEqual(Forbidden, r.Status);
         }
 
         [TestMethod]
-        public void TestMethod5()
+        public void TestReturnedUserToken()
         {
-
+            dynamic users = new ExpandoObject();
+            users.Nickname = "Bilbo";
+            Response r = client.DoPostAsync("users", users).Result;
+            string tokenReturned = r.Data.ToString();
+            Console.WriteLine(tokenReturned);
+            if (tokenReturned.Length < 3)
+            {
+                Assert.Fail();
+            }
         }
 
         [TestMethod]
         public void TestMethod6()
         {
-
+            Assert.Fail();
         }
 
         [TestMethod]
         public void TestMethod7()
         {
-
+            Assert.Fail();
         }
 
         [TestMethod]
         public void TestMethod8()
         {
-
+            Assert.Fail();
         }
 
         [TestMethod]
         public void TestMethod9()
         {
-
+            Assert.Fail();
         }
 
         [TestMethod]
         public void TestMethod10()
         {
-
+            Assert.Fail();
         }
 
         [TestMethod]
         public void TestMethod11()
         {
-
+            Assert.Fail();
         }
 
         [TestMethod]
         public void TestMethod12()
         {
-
+            Assert.Fail();
         }
 
         [TestMethod]
         public void TestMethod13()
         {
-
+            Assert.Fail();
         }
 
         [TestMethod]
         public void TestMethod14()
         {
-
+            Assert.Fail();
         }
 
         [TestMethod]
         public void TestMethod15()
         {
-
+            Assert.Fail();
         }
 
         [TestMethod]
         public void TestMethod16()
         {
-
-        }
-
-        [TestMethod]
-        public void TestMethod17()
-        {
-
-        }
-
-        [TestMethod]
-        public void TestMethod18()
-        {
-
-        }
-
-        [TestMethod]
-        public void TestMethod19()
-        {
-
-        }
-
-        [TestMethod]
-        public void TestMethod20()
-        {
-
+            Assert.Fail();
         }
     }
 }

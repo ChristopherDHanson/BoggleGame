@@ -28,13 +28,13 @@ namespace Boggle
         /// Otherwise, creates a user, returns the user's token, and responds with status code Created. 
         /// </summary>
         [WebInvoke(Method = "POST", UriTemplate = "/users")]
-        string Register(UserName user);
+        Token Register(UserName user);
 
         /// <summary>
         /// Joins game. 
         /// </summary>
         [WebInvoke(Method = "POST", UriTemplate = "/games")]
-        string Join(TokenTime user);
+        GameIDOnly Join(TokenTime user);
 
         /// <summary>
         /// Cancels join

@@ -60,6 +60,11 @@ namespace Boggle
         public string Word { get; set; }
     }
 
+    public class GameIDOnly
+    {
+        public string GameID { get; set; }
+    }
+
     /// <summary>
     /// Used in Game Status request.
     /// </summary>
@@ -74,6 +79,55 @@ namespace Boggle
         /// String for current Board
         /// </summary>
         public string Board { get; set; }
+
+        /// <summary>
+        /// Starting TimeLimit
+        /// </summary>
+        public int TimeLimit { get; set; }
+
+        /// <summary>
+        /// Time left in current game.
+        /// </summary>
+        public int TimeLeft { get; set; }
+
+        public PlayerStatus Player1 { get; set; }
+
+        public PlayerStatus Player2 { get; set; }
+    }
+
+    public class GamePending : GameStatus
+    {
+        /// <summary>
+        /// Pending if looking for game. Active if in game. Completed if finished game.
+        /// </summary>
+        public string GameState { get; set; }
+
+
+    }
+
+    public class GameFull : GameStatus
+    {
+        /// <summary>
+        /// Pending if looking for game. Active if in game. Completed if finished game.
+        /// </summary>
+        public string GameState { get; set; }
+
+        /// <summary>
+        /// Time left in current game.
+        /// </summary>
+        public int TimeLeft { get; set; }
+
+        public PlayerStatus Player1 { get; set; }
+
+        public PlayerStatus Player2 { get; set; }
+    }
+
+    public class GameActiveBrief : GameStatus
+    {
+        /// <summary>
+        /// Pending if looking for game. Active if in game. Completed if finished game.
+        /// </summary>
+        public string GameState { get; set; }
 
         /// <summary>
         /// Starting TimeLimit
@@ -146,54 +200,5 @@ namespace Boggle
         public string GameID { get; set; }
         public BoggleBoard GameBoard { get; set; }
         public GameStatus GameStatus { get; set; }
-    }
-
-    public class GamePending : GameStatus
-    {
-        /// <summary>
-        /// Pending if looking for game. Active if in game. Completed if finished game.
-        /// </summary>
-        public string GameState { get; set; }
-
-
-    }
-
-    public class GameFull : GameStatus
-    {
-        /// <summary>
-        /// Pending if looking for game. Active if in game. Completed if finished game.
-        /// </summary>
-        public string GameState { get; set; }
-
-        /// <summary>
-        /// Time left in current game.
-        /// </summary>
-        public int TimeLeft { get; set; }
-
-        public PlayerStatus Player1 { get; set; }
-
-        public PlayerStatus Player2 { get; set; }
-    }
-
-    public class GameActiveBrief : GameStatus
-    {
-        /// <summary>
-        /// Pending if looking for game. Active if in game. Completed if finished game.
-        /// </summary>
-        public string GameState { get; set; }
-
-        /// <summary>
-        /// Starting TimeLimit
-        /// </summary>
-        public int TimeLimit { get; set; }
-
-        /// <summary>
-        /// Time left in current game.
-        /// </summary>
-        public int TimeLeft { get; set; }
-
-        public PlayerStatus Player1 { get; set; }
-
-        public PlayerStatus Player2 { get; set; }
     }
 }

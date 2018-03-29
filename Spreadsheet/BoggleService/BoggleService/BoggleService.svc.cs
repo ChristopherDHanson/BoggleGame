@@ -14,7 +14,7 @@ namespace Boggle
         private int gameCounter = 0;
         private string pendingGameID;
         private bool gameIsPending = false;
-        private HashSet<string> dictionaryWords; // words that are valid inputs
+        private static HashSet<string> dictionaryWords; // words that are valid inputs
 
         /// <summary>
         /// The most recent call to SetStatus determines the response code used when
@@ -75,8 +75,20 @@ namespace Boggle
         /// </summary>
         /// <param name="name">Contains Nickname</param>
         /// <returns>Returns user token</returns>
-        public string Register(UserName name)
+        public Token Register(UserName name)
         {
+            if (dictionaryWords == null)
+            { // The first time a user registers to the server, copy contents of .txt file into HashSet for const. access
+                string line;
+                using (StreamReader file = new System.IO.StreamReader(AppDomain.CurrentDomain.BaseDirectory + "dictionary.txt"))
+                {
+                    while ((line = file.ReadLine()) != null)
+                    {
+                        dictionaryWords.Add(line);
+                    }
+                }
+            }
+
             string theName = name.Nickname;
             if (theName == null)
             {
@@ -93,7 +105,9 @@ namespace Boggle
                 string newUserToken = Guid.NewGuid().ToString();
                 users.Add(newUserToken, name);
                 SetStatus(Created);
-                return newUserToken;
+                Token returnToke = new Token();
+                returnToke.UserToken = newUserToken;
+                return returnToke;
             }
         }
 
@@ -102,7 +116,7 @@ namespace Boggle
         /// </summary>
         /// <param name="tkTime">Contains UserToken and desired TimeLimit</param>
         /// <returns>Returns new GameID</returns>
-        public string Join(TokenTime tkTime)
+        public GameIDOnly Join(TokenTime tkTime)
         {
             if (!users.ContainsKey(tkTime.UserToken) || tkTime.TimeLimit < 5 || tkTime.TimeLimit > 120)
             {
@@ -131,7 +145,10 @@ namespace Boggle
                 games.Add(pendingGameID, newGame);
                 games[pendingGameID].GameStatus.TimeLimit = tkTime.TimeLimit;
 
-                return pendingGameID;
+                SetStatus(Accepted);
+                GameIDOnly idToReturn = new GameIDOnly();
+                idToReturn.GameID = pendingGameID;
+                return idToReturn;
             }
             else if (gameIsPending && games[pendingGameID].Player1Token.Equals(tkTime.UserToken)) // This user is already pending
             {
@@ -149,7 +166,9 @@ namespace Boggle
 
                 gameIsPending = false;
                 SetStatus(Created);
-                return pendingGameID;
+                GameIDOnly idToReturn = new GameIDOnly();
+                idToReturn.GameID = pendingGameID;
+                return idToReturn;
             }
         }
 
@@ -191,13 +210,11 @@ namespace Boggle
             }
             else // Word will be successfully played
             {
-                //                Otherwise, records the trimmed Word as being played by UserToken in the game identified by GameID.
-                //                Returns the score for Word in the context of the game(e.g. if Word has been played before the score is zero). 
-                //                The word is not case sensitive.
                 string theWord = wordToPlay.Word.Trim().ToLower();
                 string theToken = wordToPlay.UserToken;
 
-                if (games[gameID].GameBoard.CanBeFormed(theWord) && dictionaryWords.Contains(theWord) && !HasBeenPlayed(wordToPlay.UserToken, gameID, wordToPlay.Word)) //+its in dictionary and if it has not been played before
+                if (games[gameID].GameBoard.CanBeFormed(theWord) && dictionaryWords.Contains(theWord) &&
+                    !HasBeenPlayed(wordToPlay.UserToken, gameID, wordToPlay.Word))
                 {
                     //add to words played and increment point 
                     if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
@@ -211,7 +228,8 @@ namespace Boggle
                         games[gameID].GameStatus.Player2.WordsPlayed.Add(new WordScore(theWord, 1));
                     }
                 }
-                else if (games[gameID].GameBoard.CanBeFormed(theWord) && HasBeenPlayed(wordToPlay.UserToken, gameID, wordToPlay.Word))//if+its in dictionary and if it has been played before
+                else if (games[gameID].GameBoard.CanBeFormed(theWord) && dictionaryWords.Contains(theWord) && 
+                    HasBeenPlayed(wordToPlay.UserToken, gameID, wordToPlay.Word))
                 {
                     //add to words played with 0 points
                     if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
