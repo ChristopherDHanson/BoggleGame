@@ -311,56 +311,60 @@ namespace Boggle
                     SetStatus(Forbidden);
                     return null;
                 }
+
+                GameStatus toReturn = new GameStatus();
                 if (games[GameID].GameStatus.Equals("pending"))
                 {
-                    GameStatus pending = new GamePending();
-                    pending.GameState = games[GameID].GameStatus.GameState;
-                    SetStatus(OK);
-
-                    return pending;
-                }
-
-                int timeRemaining = games[GameID].GameStatus.TimeLimit - ((Environment.TickCount - games[GameID].StartTime)/1000);
-                if (timeRemaining <= 0) {
-                    games[GameID].GameStatus.TimeLeft = 0;
-                    games[GameID].GameStatus.GameState = "completed";
+                    toReturn.GameState = games[GameID].GameStatus.GameState;
+                    toReturn.Board = null;
+                    toReturn.Player1 = null;
+                    toReturn.Player2 = null;
+                    toReturn.TimeLeft = null;
+                    toReturn.TimeLimit = null;
                 }
                 else
                 {
-                    games[GameID].GameStatus.TimeLeft = timeRemaining;
+                    int timeNow = Environment.TickCount;
+                    int? timeRemaining = games[GameID].GameStatus.TimeLimit - ((timeNow - games[GameID].StartTime) / 1000);
+                    if (timeRemaining <= 0)
+                    {
+                        games[GameID].GameStatus.TimeLeft = 0;
+                        games[GameID].GameStatus.GameState = "completed";
+                    }
+                    else
+                    {
+                        games[GameID].GameStatus.TimeLeft = timeRemaining;
+                    }
+
+                    if ((games[GameID].GameStatus.GameState.Equals("active") || games[GameID].GameStatus.GameState.Equals("completed")) &&
+                        (isBrief != null && isBrief.Equals("yes"))) // Active or completed, brief response
+                    {
+                        toReturn.GameState = games[GameID].GameStatus.GameState;
+                        toReturn.Board = null;
+                        toReturn.Player1 = games[GameID].GameStatus.Player1;
+                        toReturn.Player1.Nickname = null;
+                        toReturn.Player2 = games[GameID].GameStatus.Player2;
+                        toReturn.Player2.Nickname = null;
+                        toReturn.TimeLeft = games[GameID].GameStatus.TimeLeft;
+                        toReturn.TimeLimit = null;
+                    }
+                    else if (games[GameID].GameStatus.Equals("active") && (isBrief == null || !isBrief.Equals("yes"))) // Active full response
+                    {
+                        toReturn.GameState = games[GameID].GameStatus.GameState;
+                        toReturn.Board = games[GameID].GameStatus.Board;
+                        toReturn.Player1 = games[GameID].GameStatus.Player1;
+                        toReturn.Player2 = games[GameID].GameStatus.Player2;
+                        toReturn.TimeLeft = games[GameID].GameStatus.TimeLeft;
+                        toReturn.TimeLimit = games[GameID].GameStatus.TimeLimit;
+                    }
+                    else if (games[GameID].GameStatus.Equals("completed") && (isBrief == null || !isBrief.Equals("yes"))) // Completed full
+                    {
+                        toReturn = games[GameID].GameStatus;
+                    }
                 }
 
-
-                if ((games[GameID].GameStatus.GameState.Equals("active") || games[GameID].GameStatus.GameState.Equals("completed")) &&
-                         (isBrief != null && isBrief.Equals("yes"))) // Active or completed, brief response
-                {
-                    GameStatus activeCompleteBrief = new GameFull();
-                    activeCompleteBrief.GameState = games[GameID].GameStatus.GameState;
-                    activeCompleteBrief.TimeLeft = games[GameID].GameStatus.TimeLeft;
-                    activeCompleteBrief.Player1 = games[GameID].GameStatus.Player1;
-                    activeCompleteBrief.Player2 = games[GameID].GameStatus.Player2;
-                    SetStatus(OK);
-                    return activeCompleteBrief;
-                }
-
-                if (games[GameID].GameStatus.Equals("active") && (isBrief == null || !isBrief.Equals("yes"))) // Active full response
-                {
-                    GameStatus activeBrief = new GameActiveBrief();
-                    activeBrief.GameState = games[GameID].GameStatus.GameState;
-                    activeBrief.TimeLeft = games[GameID].GameStatus.TimeLeft;
-                    activeBrief.TimeLimit = games[GameID].GameStatus.TimeLimit;
-                    activeBrief.Player1 = games[GameID].GameStatus.Player1;
-                    activeBrief.Player2 = games[GameID].GameStatus.Player2;
-                    SetStatus(OK);
-                    return activeBrief;
-                }
-
-                if (games[GameID].GameStatus.Equals("completed") && (isBrief == null || !isBrief.Equals("yes"))) // Completed brief
-                {
-                    SetStatus(OK);
-                }
-
-                return games[GameID].GameStatus;
+                SetStatus(OK);
+                return toReturn;
             }
         }
 
