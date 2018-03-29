@@ -205,5 +205,6 @@ namespace Boggle
         public string GameID { get; set; }
         public BoggleBoard GameBoard { get; set; }
         public GameStatus GameStatus { get; set; }
+        public int StartTime { get; set; }
     }
 }

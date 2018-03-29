@@ -168,6 +168,7 @@ namespace Boggle
                     games[pendingGameID].GameStatus.GameState = "active";
 
                     games[pendingGameID].Player2Token = tkTime.UserToken;
+                    games[pendingGameID].GameStatus.Player2 = new PlayerStatus();
                     games[pendingGameID].GameStatus.Player2.Nickname = users[tkTime.UserToken].Nickname;
                     games[pendingGameID].GameStatus.Player2.Score = 0;
 
@@ -175,6 +176,7 @@ namespace Boggle
                     SetStatus(Created);
                     GameIDOnly idToReturn = new GameIDOnly();
                     idToReturn.GameID = pendingGameID;
+                    games[pendingGameID].StartTime = Environment.TickCount;
                     return idToReturn;
                 }
             }
@@ -319,7 +321,18 @@ namespace Boggle
                     return pending;
                 }
 
-                if ((games[GameID].GameStatus.Equals("active") || games[GameID].GameStatus.Equals("completed")) &&
+                int timeRemaining = games[GameID].GameStatus.TimeLimit - ((Environment.TickCount - games[GameID].StartTime)/1000);
+                if (timeRemaining <= 0) {
+                    games[GameID].GameStatus.TimeLeft = 0;
+                    games[GameID].GameStatus.GameState = "completed";
+                }
+                else
+                {
+                    games[GameID].GameStatus.TimeLeft = timeRemaining;
+                }
+
+
+                if ((games[GameID].GameStatus.GameState.Equals("active") || games[GameID].GameStatus.GameState.Equals("completed")) &&
                          isBrief.Equals("yes"))
                 {
                     GameStatus activeCompleteBrief = new GameFull();
