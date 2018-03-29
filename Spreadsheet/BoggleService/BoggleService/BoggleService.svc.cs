@@ -9,11 +9,11 @@ namespace Boggle
 {
     public class BoggleService : IBoggleService
     {
-        private readonly Dictionary<string, UserName> users = new Dictionary<string, UserName>();
-        private readonly Dictionary<string, Game> games = new Dictionary<string, Game>();
-        private int gameCounter = 0;
-        private string pendingGameID;
-        private bool gameIsPending = false;
+        private static readonly Dictionary<string, UserName> users = new Dictionary<string, UserName>();
+        private static readonly Dictionary<string, Game> games = new Dictionary<string, Game>();
+        private static int gameCounter = 0;
+        private static string pendingGameID;
+        private static bool gameIsPending = false;
         private static HashSet<string> dictionaryWords; // words that are valid inputs
 
         /// <summary>
