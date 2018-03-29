@@ -77,17 +77,17 @@ namespace Boggle
         /// <returns>Returns user token</returns>
         public Token Register(UserName name)
         {
-            if (dictionaryWords == null)
-            { // The first time a user registers to the server, copy contents of .txt file into HashSet for const. access
-                string line;
-                using (StreamReader file = new System.IO.StreamReader(AppDomain.CurrentDomain.BaseDirectory + "dictionary.txt"))
-                {
-                    while ((line = file.ReadLine()) != null)
-                    {
-                        dictionaryWords.Add(line);
-                    }
-                }
-            }
+            //if (dictionaryWords == null)
+            //{ // The first time a user registers to the server, copy contents of .txt file into HashSet for const. access
+            //    string line;
+            //    using (StreamReader file = new System.IO.StreamReader(AppDomain.CurrentDomain.BaseDirectory + "dictionary.txt"))
+            //    {
+            //        while ((line = file.ReadLine()) != null)
+            //        {
+            //            dictionaryWords.Add(line);
+            //        }
+            //    }
+            //}
 
             string theName = name.Nickname;
             if (theName == null)
