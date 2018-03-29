@@ -141,6 +141,7 @@ namespace Boggle
                     newGame.GameStatus = new GameStatus();
                     newGame.GameStatus.GameState = "pending";
                     newGame.GameStatus.Player1 = new PlayerStatus();
+                    newGame.GameStatus.Player1.WordsPlayed = new List<WordScore>();
                     newGame.GameStatus.Player1.Nickname = users[tkTime.UserToken].Nickname;
                     newGame.GameStatus.Player1.Score = 0;
 
@@ -169,6 +170,7 @@ namespace Boggle
 
                     games[pendingGameID].Player2Token = tkTime.UserToken;
                     games[pendingGameID].GameStatus.Player2 = new PlayerStatus();
+                    games[pendingGameID].GameStatus.Player2.WordsPlayed = new List<WordScore>();
                     games[pendingGameID].GameStatus.Player2.Nickname = users[tkTime.UserToken].Nickname;
                     games[pendingGameID].GameStatus.Player2.Score = 0;
 
@@ -190,7 +192,7 @@ namespace Boggle
         {
             lock (sync)
             {
-                if (!users.ContainsKey(userTkn.UserToken) || userTkn.UserToken.Equals(games[pendingGameID].Player1Token))
+                if (!users.ContainsKey(userTkn.UserToken) || !userTkn.UserToken.Equals(games[pendingGameID].Player1Token))
                 {
                     SetStatus(Forbidden);
                 }
