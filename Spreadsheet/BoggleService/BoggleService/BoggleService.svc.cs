@@ -341,10 +341,10 @@ namespace Boggle
                     {
                         toReturn.GameState = games[GameID].GameStatus.GameState;
                         toReturn.Board = null;
-                        toReturn.Player1 = games[GameID].GameStatus.Player1;
-                        toReturn.Player1.Nickname = null;
-                        toReturn.Player2 = games[GameID].GameStatus.Player2;
-                        toReturn.Player2.Nickname = null;
+                        toReturn.Player1 = new PlayerStatus();
+                        toReturn.Player1.Score = games[GameID].GameStatus.Player1.Score;
+                        toReturn.Player2 = new PlayerStatus();
+                        toReturn.Player2.Score = games[GameID].GameStatus.Player2.Score;
                         toReturn.TimeLeft = games[GameID].GameStatus.TimeLeft;
                         toReturn.TimeLimit = null;
                     }
