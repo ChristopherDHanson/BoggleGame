@@ -168,6 +168,7 @@ namespace Boggle
                     games[pendingGameID].GameStatus.GameState = "active";
 
                     games[pendingGameID].Player2Token = tkTime.UserToken;
+                    games[pendingGameID].GameStatus.Player2 = new PlayerStatus();
                     games[pendingGameID].GameStatus.Player2.Nickname = users[tkTime.UserToken].Nickname;
                     games[pendingGameID].GameStatus.Player2.Score = 0;
 
@@ -319,7 +320,7 @@ namespace Boggle
                     return pending;
                 }
 
-                if ((games[GameID].GameStatus.Equals("active") || games[GameID].GameStatus.Equals("completed")) &&
+                if ((games[GameID].GameStatus.GameState.Equals("active") || games[GameID].GameStatus.Equals("completed")) &&
                          isBrief.Equals("yes"))
                 {
                     GameStatus activeCompleteBrief = new GameFull();
@@ -331,7 +332,7 @@ namespace Boggle
                     return activeCompleteBrief;
                 }
 
-                if (games[GameID].GameStatus.Equals("active") && !isBrief.Equals("yes"))
+                if (games[GameID].GameStatus.GameState.Equals("active") && !isBrief.Equals("yes"))
                 {
                     GameStatus activeBrief = new GameActiveBrief();
                     activeBrief.GameState = games[GameID].GameStatus.GameState;
@@ -343,7 +344,7 @@ namespace Boggle
                     return activeBrief;
                 }
 
-                if (games[GameID].GameStatus.Equals("completed") && !isBrief.Equals("yes"))
+                if (games[GameID].GameStatus.GameState.Equals("completed") && !isBrief.Equals("yes"))
                 {
                     SetStatus(OK);
                 }
