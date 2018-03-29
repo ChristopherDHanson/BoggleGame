@@ -128,7 +128,21 @@ namespace Boggle
         [TestMethod]
         public void TestMethod6()
         {
-            Assert.Fail();
+            dynamic users = new ExpandoObject();
+            users.Nickname = "Jeb";
+            Response q = client.DoPostAsync("users", users).Result;
+            users.UserToken = q.Data.UserToken;
+            users.TimeLimit = 121;
+
+            dynamic users2 = new ExpandoObject();
+            users.Nickname = "Joe";
+            Response s = client.DoPostAsync("users", users).Result;
+            users2.UserToken = s.Data.UserToken;
+            users2.TimeLimit = 121;
+
+            Response r = client.DoPostAsync("games", users).Result;
+            Assert.AreEqual(Forbidden, r.Status);
+
         }
 
         [TestMethod]

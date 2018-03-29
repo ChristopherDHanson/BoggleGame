@@ -320,7 +320,8 @@ namespace Boggle
                     return pending;
                 }
 
-                int timeRemaining = games[GameID].GameStatus.TimeLimit - ((Environment.TickCount - games[GameID].StartTime)/1000);
+                int timeNow = Environment.TickCount;
+                int timeRemaining = games[GameID].GameStatus.TimeLimit - ((timeNow - games[GameID].StartTime)/1000);
                 if (timeRemaining <= 0) {
                     games[GameID].GameStatus.TimeLeft = 0;
                     games[GameID].GameStatus.GameState = "completed";
@@ -332,7 +333,7 @@ namespace Boggle
 
 
                 if ((games[GameID].GameStatus.GameState.Equals("active") || games[GameID].GameStatus.GameState.Equals("completed")) &&
-                         isBrief.Equals("yes"))
+                         (isBrief != null &&isBrief.Equals("yes")))
                 {
                     GameStatus activeCompleteBrief = new GameFull();
                     activeCompleteBrief.GameState = games[GameID].GameStatus.GameState;
@@ -343,7 +344,7 @@ namespace Boggle
                     return activeCompleteBrief;
                 }
 
-                if (games[GameID].GameStatus.GameState.Equals("active") && !isBrief.Equals("yes"))
+                if (games[GameID].GameStatus.GameState.Equals("active") && (isBrief == null || !isBrief.Equals("yes")))
                 {
                     GameStatus activeBrief = new GameActiveBrief();
                     activeBrief.GameState = games[GameID].GameStatus.GameState;
@@ -355,7 +356,7 @@ namespace Boggle
                     return activeBrief;
                 }
 
-                if (games[GameID].GameStatus.GameState.Equals("completed") && !isBrief.Equals("yes"))
+                if (games[GameID].GameStatus.GameState.Equals("completed") && (isBrief == null || !isBrief.Equals("yes")))
                 {
                     SetStatus(OK);
                 }
