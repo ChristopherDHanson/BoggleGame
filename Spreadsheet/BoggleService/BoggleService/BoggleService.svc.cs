@@ -332,7 +332,7 @@ namespace Boggle
 
 
                 if ((games[GameID].GameStatus.GameState.Equals("active") || games[GameID].GameStatus.GameState.Equals("completed")) &&
-                         isBrief.Equals("yes"))
+                         (isBrief != null && isBrief.Equals("yes"))) // Active or completed, brief response
                 {
                     GameStatus activeCompleteBrief = new GameFull();
                     activeCompleteBrief.GameState = games[GameID].GameStatus.GameState;
@@ -343,7 +343,7 @@ namespace Boggle
                     return activeCompleteBrief;
                 }
 
-                if (games[GameID].GameStatus.Equals("active") && !isBrief.Equals("yes"))
+                if (games[GameID].GameStatus.Equals("active") && (isBrief == null || !isBrief.Equals("yes"))) // Active full response
                 {
                     GameStatus activeBrief = new GameActiveBrief();
                     activeBrief.GameState = games[GameID].GameStatus.GameState;
@@ -355,7 +355,7 @@ namespace Boggle
                     return activeBrief;
                 }
 
-                if (games[GameID].GameStatus.Equals("completed") && !isBrief.Equals("yes"))
+                if (games[GameID].GameStatus.Equals("completed") && (isBrief == null || !isBrief.Equals("yes"))) // Completed brief
                 {
                     SetStatus(OK);
                 }
