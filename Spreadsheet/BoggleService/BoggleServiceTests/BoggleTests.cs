@@ -66,26 +66,8 @@ namespace Boggle
 
         private RestTestClient client = new RestTestClient("http://localhost:60000/BoggleService.svc/");
 
-        /// <summary>
-        /// Note that DoGetAsync (and the other similar methods) returns a Response object, which contains
-        /// the response Stats and the deserialized JSON response (if any).  See RestTestClient.cs
-        /// for details.
-        /// </summary>
         [TestMethod]
-        public void TestMethod1()
-        {
-            Response r = client.DoGetAsync("word?index={0}", "-5").Result;
-            Assert.AreEqual(Forbidden, r.Status);
-
-            r = client.DoGetAsync("word?index={0}", "5").Result;
-            Assert.AreEqual(OK, r.Status);
-
-            string word = (string) r.Data;
-            Assert.AreEqual("AAL", word);
-        }
-
-        [TestMethod]
-        public void TestBasicRegister()
+        public void BasicRegister()
         {
             dynamic users = new ExpandoObject();
             users.Nickname = "Jeb";
@@ -94,7 +76,7 @@ namespace Boggle
         }
 
         [TestMethod]
-        public void TestRegisterLongName()
+        public void RegisterLongName()
         {
             dynamic users = new ExpandoObject();
             users.Nickname = "Llanfairpwllgwyngyllgogerychwyrndrobwllllantysiliogogogoch";
@@ -103,7 +85,7 @@ namespace Boggle
         }
 
         [TestMethod]
-        public void TestRegisterEmptyName()
+        public void RegisterEmptyName()
         {
             dynamic users = new ExpandoObject();
             users.Nickname = "";
@@ -112,13 +94,12 @@ namespace Boggle
         }
 
         [TestMethod]
-        public void TestReturnedUserToken()
+        public void ReturnedUserToken()
         {
             dynamic users = new ExpandoObject();
             users.Nickname = "Bilbo";
             Response r = client.DoPostAsync("users", users).Result;
             string tokenReturned = r.Data.ToString();
-            Console.WriteLine(tokenReturned);
             if (tokenReturned.Length < 3)
             {
                 Assert.Fail();
@@ -126,7 +107,16 @@ namespace Boggle
         }
 
         [TestMethod]
-        public void TestMethod6()
+        public void RegisterTestNullNickname()
+        {
+            dynamic users = new ExpandoObject();
+            users.Nickname = null;
+            Response r = client.DoPostAsync("users", users).Result;
+            Assert.AreEqual(Forbidden, r.Status);
+        }
+
+        [TestMethod]
+        public void JoinInvalidTimeLimit121()
         {
             dynamic users = new ExpandoObject();
             users.Nickname = "Jeb";
@@ -146,21 +136,33 @@ namespace Boggle
         }
 
         [TestMethod]
-        public void TestMethod7()
+        public void JoinAsFirstPlayerExpectAccepted()
         {
-            Assert.Fail();
+            dynamic users = new ExpandoObject();
+            users.Nickname = "Jeb";
+            Response q = client.DoPostAsync("users", users).Result;
+            users.UserToken = q.Data.UserToken;
+            users.TimeLimit = 80;
+
+            Response r = client.DoPostAsync("games", users).Result;
+            users = new ExpandoObject();
+            q = client.DoPutAsync(users, "games").Result;
+            Assert.AreEqual(Accepted, r.Status);
         }
 
         [TestMethod]
-        public void TestMethod8()
+        public void JoinAsFirstPlayerAlreadyPendingExpectConflict()
         {
-            Assert.Fail();
-        }
+            dynamic users = new ExpandoObject();
+            users.Nickname = "Jeb";
+            Response q = client.DoPostAsync("users", users).Result;
+            users.UserToken = q.Data.UserToken;
+            users.TimeLimit = 80;
 
-        [TestMethod]
-        public void TestMethod9()
-        {
-            Assert.Fail();
+            Response r = client.DoPostAsync("games", users).Result;
+            r = client.DoPostAsync("games", users).Result;
+            r = client.DoPostAsync("games", users).Result;
+            Assert.AreEqual(Conflict, r.Status);
         }
 
         [TestMethod]

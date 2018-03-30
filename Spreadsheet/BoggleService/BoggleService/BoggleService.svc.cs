@@ -39,39 +39,6 @@ namespace Boggle
         }
 
         /// <summary>
-        /// Demo.  You can delete this.
-        /// </summary>
-        public string WordAtIndex(int n)
-        {
-            if (n < 0)
-            {
-                SetStatus(Forbidden);
-                return null;
-            }
-
-            string line;
-            using (StreamReader file = new System.IO.StreamReader(AppDomain.CurrentDomain.BaseDirectory + "dictionary.txt"))
-            {
-                while ((line = file.ReadLine()) != null)
-                {
-                    if (n == 0) break;
-                    n--;
-                }
-            }
-
-            if (n == 0)
-            {
-                SetStatus(OK);
-                return line;
-            }
-            else
-            {
-                SetStatus(Forbidden);
-                return null;
-            }
-        }
-
-        /// <summary>
         /// Register new user
         /// </summary>
         /// <param name="name">Contains Nickname</param>
