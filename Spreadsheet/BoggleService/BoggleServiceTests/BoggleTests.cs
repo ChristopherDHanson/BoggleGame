@@ -65,6 +65,7 @@ namespace Boggle
                 {
                     dictionaryWords.Add(line);
                 }
+              
             }
         }
 
@@ -387,8 +388,12 @@ namespace Boggle
                     }
                 }
             }
+
             if (didItPlay == false)
                 Assert.Fail();
+        }
+
+        [TestMethod]
         public void TestActiveBrief()
         {
             dynamic users = new ExpandoObject();
@@ -413,9 +418,10 @@ namespace Boggle
             int gameID = k.Data.GameID;
 
 
-            Response t = client.DoGetAsync("games/" + gameID +"?brief=yes", "").Result;
+            Response t = client.DoGetAsync("games/" + gameID + "?brief=yes", "").Result;
             Assert.AreEqual("active", t.Data.GameState.ToString());
         }
+
 
         [TestMethod]
         public void TestCompleteGameState()
