@@ -249,44 +249,53 @@ namespace Boggle
                         else if (theWord.Length > 7)
                             tempScore = 11;
 
-                        //add to words played and increment point 
+                        //add to words played and increment point
+                        WordScore wordScoreToAdd = new WordScore();
+                        wordScoreToAdd.Word = theWord;
+                        wordScoreToAdd.Score = tempScore;
                         if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
                         {
                             games[gameID].GameStatus.Player1.Score += tempScore;
-                            games[gameID].GameStatus.Player1.WordsPlayed.Add(new WordScore(theWord, tempScore));
+                            games[gameID].GameStatus.Player1.WordsPlayed.Add(wordScoreToAdd);
                         }
                         else // user is Player2
                         {
                             games[gameID].GameStatus.Player2.Score += tempScore;
-                            games[gameID].GameStatus.Player2.WordsPlayed.Add(new WordScore(theWord, tempScore));
+                            games[gameID].GameStatus.Player2.WordsPlayed.Add(wordScoreToAdd);
                         }
                     }
                     else if (games[gameID].GameBoard.CanBeFormed(theWord) && dictionaryWords.Contains(theWord) &&
                         HasBeenPlayed(wordToPlay.UserToken, gameID, wordToPlay.Word))
                     {
                         //add to words played with 0 points
+                        WordScore wordScoreToAdd = new WordScore();
+                        wordScoreToAdd.Word = theWord;
+                        wordScoreToAdd.Score = tempScore;
                         if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
                         {
-                            games[gameID].GameStatus.Player1.WordsPlayed.Add(new WordScore(theWord, tempScore));
+                            games[gameID].GameStatus.Player1.WordsPlayed.Add(wordScoreToAdd);
                         }
                         else // user is Player2
                         {
-                            games[gameID].GameStatus.Player2.WordsPlayed.Add(new WordScore(theWord, tempScore));
+                            games[gameID].GameStatus.Player2.WordsPlayed.Add(wordScoreToAdd);
                         }
                     }
                     else // Invalid word played
                     {
                         tempScore = -1;
                         //add to words played and decrement a point
+                        WordScore wordScoreToAdd = new WordScore();
+                        wordScoreToAdd.Word = theWord;
+                        wordScoreToAdd.Score = tempScore;
                         if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
                         {
                             games[gameID].GameStatus.Player1.Score--;
-                            games[gameID].GameStatus.Player1.WordsPlayed.Add(new WordScore(theWord, tempScore));
+                            games[gameID].GameStatus.Player1.WordsPlayed.Add(wordScoreToAdd);
                         }
                         else // user is Player2
                         {
                             games[gameID].GameStatus.Player2.Score--;
-                            games[gameID].GameStatus.Player2.WordsPlayed.Add(new WordScore(theWord, tempScore));
+                            games[gameID].GameStatus.Player2.WordsPlayed.Add(wordScoreToAdd);
                         }
                     }
 

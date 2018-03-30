@@ -127,15 +127,6 @@ namespace Boggle
     public class WordScore
     {
         /// <summary>
-        /// Creates new WordScore with specified word and score
-        /// </summary>
-        public WordScore(string word, int score)
-        {
-            Word = word;
-            Score = score;
-        }
-
-        /// <summary>
         /// Word played
         /// </summary>
         public string Word { get; set; }
