@@ -97,11 +97,14 @@ namespace Boggle
             dynamic users = new ExpandoObject();
             users.Nickname = "Jeb";
             Response q = client.DoPostAsync("users", users).Result;
+
             dynamic userInfo = new ExpandoObject();
             userInfo.UserToken = q.Data.UserToken;
             userInfo.TimeLimit = 5;
+
             Response k = client.DoPostAsync("games", userInfo).Result;
             int gameID = k.Data.GameID;
+
             Response t = client.DoGetAsync("games/" + gameID, "").Result;
             Assert.AreEqual("pending", t.Data.GameState.ToString());
 
@@ -907,22 +910,28 @@ namespace Boggle
         {
             dynamic users = new ExpandoObject();
             users.Nickname = "Jeb";
+
             Response q = client.DoPostAsync("users", users).Result;
             dynamic userInfo = new ExpandoObject();
             userInfo.UserToken = q.Data.UserToken;
             userInfo.TimeLimit = 5;
+
             dynamic users2 = new ExpandoObject();
             users2.Nickname = "Joe";
+
             Response q2 = client.DoPostAsync("users", users).Result;
             dynamic userInfo2 = new ExpandoObject();
             userInfo2.UserToken = q2.Data.UserToken;
             userInfo2.TimeLimit = 5;
+
             Response k = client.DoPostAsync("games", userInfo).Result;
             Response l = client.DoPostAsync("games", userInfo2).Result;
             int gameID = k.Data.GameID;
+
             Response a = client.DoPutAsync(userInfo2, "games").Result;
             Response b = client.DoPutAsync(userInfo2, "games/" + gameID).Result;
             Response c = client.DoGetAsync("games/" + (-1), "").Result;
+
             Assert.AreEqual(Forbidden, a.Status);
             Assert.AreEqual(Forbidden, b.Status);
             Assert.AreEqual(Forbidden, c.Status);
