@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+
 /// <summary>
 /// Contains variety of classes that represent objects that come in
 /// the header of requests to server. Also contains classes representing
