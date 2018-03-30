@@ -59,7 +59,7 @@ namespace Boggle
         {
             IISAgent.Start(@"/site:""BoggleService"" /apppool:""Clr4IntegratedAppPool"" /config:""..\..\..\.vs\config\applicationhost.config""");
             string line;
-            using (StreamReader file = new System.IO.StreamReader(AppDomain.CurrentDomain.BaseDirectory + "/dictionary.txt"))
+            using (StreamReader file = new System.IO.StreamReader(AppDomain.CurrentDomain.BaseDirectory + "/.../.../dictionary.txt"))
             {
                 while ((line = file.ReadLine()) != null)
                 {
