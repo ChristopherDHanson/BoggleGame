@@ -80,7 +80,7 @@ namespace Boggle
         {
             lock (sync)
             {
-                if (dictionaryWords == null)
+                if (dictionaryWords.Count == 0)
                 { // The first time a user registers to the server, copy contents of .txt file into HashSet for const. access
                     string line;
                     using (StreamReader file = new System.IO.StreamReader(AppDomain.CurrentDomain.BaseDirectory + "dictionary.txt"))
@@ -229,7 +229,7 @@ namespace Boggle
                 }
                 else // Word will be successfully played
                 {
-                    string theWord = wordToPlay.Word.Trim().ToLower();
+                    string theWord = wordToPlay.Word.Trim().ToUpper();
                     string theToken = wordToPlay.UserToken;
                     ScoreOnly scoreToReturn = new ScoreOnly();
                     int tempScore;
@@ -313,7 +313,7 @@ namespace Boggle
                 }
 
                 GameStatus toReturn = new GameStatus();
-                if (games[GameID].GameStatus.Equals("pending"))
+                if (games[GameID].GameStatus.GameState.Equals("pending"))
                 {
                     toReturn.GameState = games[GameID].GameStatus.GameState;
                     toReturn.Board = null;
@@ -348,7 +348,7 @@ namespace Boggle
                         toReturn.TimeLeft = games[GameID].GameStatus.TimeLeft;
                         toReturn.TimeLimit = null;
                     }
-                    else if (games[GameID].GameStatus.Equals("active") && (isBrief == null || !isBrief.Equals("yes"))) // Active full response
+                    else if (games[GameID].GameStatus.GameState.Equals("active") && (isBrief == null || !isBrief.Equals("yes"))) // Active full response
                     {
                         toReturn.GameState = games[GameID].GameStatus.GameState;
                         toReturn.Board = games[GameID].GameStatus.Board;
@@ -357,7 +357,7 @@ namespace Boggle
                         toReturn.TimeLeft = games[GameID].GameStatus.TimeLeft;
                         toReturn.TimeLimit = games[GameID].GameStatus.TimeLimit;
                     }
-                    else if (games[GameID].GameStatus.Equals("completed") && (isBrief == null || !isBrief.Equals("yes"))) // Completed full
+                    else if (games[GameID].GameStatus.GameState.Equals("completed") && (isBrief == null || !isBrief.Equals("yes"))) // Completed full
                     {
                         toReturn = games[GameID].GameStatus;
                     }
