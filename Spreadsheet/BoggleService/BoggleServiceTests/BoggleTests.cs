@@ -394,6 +394,59 @@ namespace Boggle
         }
 
         [TestMethod]
+        public void PlayWordOnTheBoardTwiceAsPlayer1()
+        {
+            // player 1, Jeb, register, join
+            dynamic users = new ExpandoObject();
+            users.Nickname = "Jeb";
+            Response q = client.DoPostAsync("users", users).Result;
+            users = new ExpandoObject();
+            users.UserToken = q.Data.UserToken;
+            users.TimeLimit = 80;
+            q = client.DoPostAsync("games", users).Result;
+
+            // p2, Bob, reg, join
+            users = new ExpandoObject();
+            users.Nickname = "Bob";
+            q = client.DoPostAsync("users", users).Result;
+            users = new ExpandoObject();
+            users.UserToken = q.Data.UserToken;
+            users.TimeLimit = 80;
+            dynamic userPlayWord = new ExpandoObject();
+            userPlayWord.UserToken = q.Data.UserToken;
+            userPlayWord.Word = "ok";
+            q = client.DoPostAsync("games", users).Result;
+
+            Thread.Sleep(500);
+            int gameID = q.Data.GameID;
+            Response r = client.DoGetAsync("games/" + gameID.ToString()).Result;
+            string gameBoardLetters = r.Data.Board;
+
+            BoggleBoard theBoard = new BoggleBoard(gameBoardLetters);
+            bool didItPlay = false;
+            foreach (string s in dictionaryWords)
+            {
+                if (theBoard.CanBeFormed(s) && s.Length > 2)
+                {
+                    userPlayWord.Word = s;
+                    q = client.DoPutAsync(userPlayWord, "games/" + gameID.ToString()).Result;
+                    q = client.DoPutAsync(userPlayWord, "games/" + gameID.ToString()).Result;
+                    Assert.AreEqual(OK, q.Status);
+                    users = new ExpandoObject();
+                    users.Score = q.Data.Score;
+                    if (users.Score > -1)
+                    {
+                        Assert.AreEqual(users.Score.ToString(), "0");
+                        didItPlay = true;
+                        break;
+                    }
+                }
+            }
+            if (didItPlay == false)
+                Assert.Fail();
+        }
+
+        [TestMethod]
         public void TestActiveBrief()
         {
             dynamic users = new ExpandoObject();
