@@ -15,14 +15,6 @@ namespace Boggle
         Stream API();
 
         /// <summary>
-        /// Returns the nth word from dictionary.txt.  If there is
-        /// no nth word, responds with code 403. This is a demo;
-        /// you can delete it.
-        /// </summary>
-        [WebGet(UriTemplate = "/word?index={n}")]
-        string WordAtIndex(int n);
-
-        /// <summary>
         /// Registers a new user.
         /// If either user.Name or user.Email is null or is empty after trimming, responds with status code Forbidden.
         /// Otherwise, creates a user, returns the user's token, and responds with status code Created. 
