@@ -46,9 +46,15 @@ namespace Boggle
             }
         }
     }
+    /// <summary>
+    /// Contains test cases
+    /// </summary>
     [TestClass]
     public class BoggleTests
     {
+        /// <summary>
+        /// Holds words in dictionary for quick lookup
+        /// </summary>
         public static HashSet<string> dictionaryWords = new HashSet<string>();
 
         /// <summary>
@@ -82,7 +88,9 @@ namespace Boggle
 
         private RestTestClient client = new RestTestClient("http://localhost:60000/BoggleService.svc/");
 
-
+        /// <summary>
+        /// Join a game as first player, expecting pending gamestate
+        /// </summary>
         [TestMethod]
         public void TestPendingStatus()
         {
@@ -109,6 +117,9 @@ namespace Boggle
             k = client.DoPostAsync("games", cleanerInfo).Result;
         }
 
+        /// <summary>
+        /// Register with basic Nickname, expect Created status
+        /// </summary>
         [TestMethod]
         public void TestBasicRegister()
         {
@@ -118,6 +129,9 @@ namespace Boggle
             Assert.AreEqual(Created, r.Status);
         }
 
+        /// <summary>
+        /// Register with Nickname over 50 characters, expect Forbidden status
+        /// </summary>
         [TestMethod]
         public void RegisterLongName()
         {
@@ -127,6 +141,9 @@ namespace Boggle
             Assert.AreEqual(Forbidden, r.Status);
         }
 
+        /// <summary>
+        /// Register with empty Nickname, expect Forbidden status
+        /// </summary>
         [TestMethod]
         public void RegisterEmptyName()
         {
@@ -136,6 +153,9 @@ namespace Boggle
             Assert.AreEqual(Forbidden, r.Status);
         }
 
+        /// <summary>
+        /// Register with valid name, and see if a UserToken was returned
+        /// </summary>
         [TestMethod]
         public void RegisterSeeIfServerReturnsUserToken()
         {
@@ -149,6 +169,9 @@ namespace Boggle
             }
         }
 
+        /// <summary>
+        /// Register with null Nickname, expect Forbidden status
+        /// </summary>
         [TestMethod]
         public void RegisterTestNullNickname()
         {
@@ -158,6 +181,9 @@ namespace Boggle
             Assert.AreEqual(Forbidden, r.Status);
         }
 
+        /// <summary>
+        /// Join game, supply invalid time limit of 121, expect Forbidden status
+        /// </summary>
         [TestMethod]
         public void JoinInvalidTimeLimit121()
         {
@@ -177,6 +203,9 @@ namespace Boggle
             Assert.AreEqual(Forbidden, r.Status);
         }
 
+        /// <summary>
+        /// Join as first player, expect Accepted status (pending game)
+        /// </summary>
         [TestMethod]
         public void JoinAsFirstPlayerExpectAccepted()
         {
@@ -201,6 +230,9 @@ namespace Boggle
             q = client.DoPostAsync("games", cleanerInfo).Result;
         }
 
+        /// <summary>
+        /// Join while already in pending game, expect Conflict status
+        /// </summary>
         [TestMethod]
         public void JoinAsFirstPlayerAlreadyPendingExpectConflict()
         {
@@ -225,6 +257,9 @@ namespace Boggle
             q = client.DoPostAsync("games", cleanerInfo).Result;
         }
 
+        /// <summary>
+        /// Play a word not in dictionary or not able to be formed on board, expect score of -1
+        /// </summary>
         [TestMethod]
         public void PlayIncorrectWordBasicTest()
         {
@@ -257,6 +292,9 @@ namespace Boggle
             Assert.AreEqual("-1", users.Score.ToString());
         }
 
+        /// <summary>
+        /// Test two letter word, expect score of 0
+        /// </summary>
         [TestMethod]
         public void TestTwoLetterWord()
         {
@@ -289,6 +327,9 @@ namespace Boggle
             Assert.AreEqual("0", users.Score.ToString());
         }
 
+        /// <summary>
+        /// Play word in dictionary and able to be formed, expect score > 0
+        /// </summary>
         [TestMethod]
         public void PlayWordOnTheBoard()
         {
@@ -339,6 +380,9 @@ namespace Boggle
                 Assert.Fail();
         }
 
+        /// <summary>
+        /// Play valid word that has already been played, expect score of 0
+        /// </summary>
         [TestMethod]
         public void PlayWordOnTheBoardTwice()
         {
@@ -392,6 +436,9 @@ namespace Boggle
                 Assert.Fail();
         }
 
+        /// <summary>
+        /// Play (as P1) valid word that has already been played, expect score of 0
+        /// </summary>
         [TestMethod]
         public void PlayWordOnTheBoardTwiceAsPlayer1()
         {
