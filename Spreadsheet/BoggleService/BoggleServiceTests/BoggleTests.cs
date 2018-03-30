@@ -249,9 +249,32 @@ namespace Boggle
         }
 
         [TestMethod]
-        public void TestMethod12()
+        public void TestActiveBrief()
         {
-            Assert.Fail();
+            dynamic users = new ExpandoObject();
+            users.Nickname = "Jeb";
+            Response q = client.DoPostAsync("users", users).Result;
+
+            dynamic userInfo = new ExpandoObject();
+            userInfo.UserToken = q.Data.UserToken;
+            userInfo.TimeLimit = 5;
+
+            dynamic users2 = new ExpandoObject();
+            users2.Nickname = "Joe";
+            Response q2 = client.DoPostAsync("users", users).Result;
+
+            dynamic userInfo2 = new ExpandoObject();
+            userInfo2.UserToken = q2.Data.UserToken;
+            userInfo2.TimeLimit = 5;
+
+
+            Response k = client.DoPostAsync("games", userInfo).Result;
+            Response l = client.DoPostAsync("games", userInfo2).Result;
+            int gameID = k.Data.GameID;
+
+
+            Response t = client.DoGetAsync("games/" + gameID +"?brief=yes", "").Result;
+            Assert.AreEqual("active", t.Data.GameState.ToString());
         }
 
         [TestMethod]
@@ -381,6 +404,42 @@ namespace Boggle
             else
             {
                 Assert.AreEqual(Accepted, r.Status);
+            }
+        }
+
+        [TestMethod]
+        public void CancelJoin()
+        {
+            dynamic users = new ExpandoObject();
+            users.Nickname = "Jeb";
+            Response q = client.DoPostAsync("users", users).Result;
+            users.UserToken = q.Data.UserToken;
+            users.TimeLimit = 5;
+
+            dynamic userTokenInfo = new ExpandoObject();
+            userTokenInfo.UserToken = users.UserToken;
+
+            Response k = client.DoPostAsync("games", users).Result;
+
+            if (k.Status.Equals(Created))
+            {
+                dynamic users2 = new ExpandoObject();
+                users2.Nickname = "Jeb";
+                Response q2 = client.DoPostAsync("users", users2).Result;
+                users2.UserToken = q.Data.UserToken;
+                users2.TimeLimit = 5;
+
+                dynamic userTokenInfo2 = new ExpandoObject();
+                userTokenInfo2.UserToken = users2.UserToken;
+
+                Response k2 = client.DoPostAsync("games", users2).Result;
+                Response r2 = client.DoPutAsync(userTokenInfo2, "games").Result;
+                Assert.AreEqual(OK, r2.Status);
+            }
+            else
+            {
+                Response r = client.DoPutAsync(userTokenInfo, "games").Result;
+                Assert.AreEqual(OK, r.Status);
             }
         }
     }
