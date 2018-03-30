@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Dynamic;
 using System.Threading;
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.IO;
 
 namespace Boggle
 {
@@ -47,6 +49,7 @@ namespace Boggle
     [TestClass]
     public class BoggleTests
     {
+        public static HashSet<string> dictionaryWords = new HashSet<string>();
 
         /// <summary>
         /// This is automatically run prior to all the tests to start the server
@@ -55,7 +58,16 @@ namespace Boggle
         public static void StartIIS(TestContext testContext)
         {
             IISAgent.Start(@"/site:""BoggleService"" /apppool:""Clr4IntegratedAppPool"" /config:""..\..\..\.vs\config\applicationhost.config""");
+            string line;
+            using (StreamReader file = new System.IO.StreamReader(AppDomain.CurrentDomain.BaseDirectory + "/dictionary.txt"))
+            {
+                while ((line = file.ReadLine()) != null)
+                {
+                    dictionaryWords.Add(line);
+                }
+            }
         }
+
 
         /// <summary>
         /// This is automatically run when all tests have completed to stop the server
@@ -121,7 +133,7 @@ namespace Boggle
         }
 
         [TestMethod]
-        public void ReturnedUserToken()
+        public void RegisterSeeIfServerReturnsUserToken()
         {
             dynamic users = new ExpandoObject();
             users.Nickname = "Bilbo";
@@ -210,7 +222,7 @@ namespace Boggle
         }
 
         [TestMethod]
-        public void PlayWordBasicTest()
+        public void PlayIncorrectWordBasicTest()
         {
             // player 1, Jeb, register, join
             dynamic users = new ExpandoObject();
@@ -243,15 +255,140 @@ namespace Boggle
         }
 
         [TestMethod]
-        public void TestMethod11()
+        public void TestTwoLetterWord()
         {
-            Assert.Fail();
+            // player 1, Jeb, register, join
+            dynamic users = new ExpandoObject();
+            users.Nickname = "Jeb";
+            Response q = client.DoPostAsync("users", users).Result;
+            users = new ExpandoObject();
+            users.UserToken = q.Data.UserToken;
+            users.TimeLimit = 80;
+            q = client.DoPostAsync("games", users).Result;
+
+            // p2, Bob, reg, join
+            users = new ExpandoObject();
+            users.Nickname = "Bob";
+            q = client.DoPostAsync("users", users).Result;
+            users = new ExpandoObject();
+            users.UserToken = q.Data.UserToken;
+            users.TimeLimit = 80;
+            dynamic userPlayWord = new ExpandoObject();
+            userPlayWord.UserToken = q.Data.UserToken;
+            userPlayWord.Word = "ok";
+            q = client.DoPostAsync("games", users).Result;
+
+            Thread.Sleep(500);
+            int gameID = q.Data.GameID;
+            q = client.DoPutAsync(userPlayWord, "games/" + gameID.ToString()).Result;
+            Assert.AreEqual(OK, q.Status);
+            users = new ExpandoObject();
+            users.Score = q.Data.Score;
+            Assert.AreEqual("0", users.Score.ToString());
         }
 
         [TestMethod]
-        public void TestMethod12()
+        public void PlayWordOnTheBoard()
         {
-            Assert.Fail();
+            // player 1, Jeb, register, join
+            dynamic users = new ExpandoObject();
+            users.Nickname = "Jeb";
+            Response q = client.DoPostAsync("users", users).Result;
+            users = new ExpandoObject();
+            users.UserToken = q.Data.UserToken;
+            users.TimeLimit = 80;
+            q = client.DoPostAsync("games", users).Result;
+
+            // p2, Bob, reg, join
+            users = new ExpandoObject();
+            users.Nickname = "Bob";
+            q = client.DoPostAsync("users", users).Result;
+            users = new ExpandoObject();
+            users.UserToken = q.Data.UserToken;
+            users.TimeLimit = 80;
+            dynamic userPlayWord = new ExpandoObject();
+            userPlayWord.UserToken = q.Data.UserToken;
+            userPlayWord.Word = "ok";
+            q = client.DoPostAsync("games", users).Result;
+
+            Thread.Sleep(500);
+            int gameID = q.Data.GameID;
+            Response r = client.DoGetAsync("games/" + gameID.ToString()).Result;
+            string gameBoardLetters = r.Data.Board;
+
+            BoggleBoard theBoard = new BoggleBoard(gameBoardLetters);
+            bool didItPlay = false;
+            foreach (string s in dictionaryWords)
+            {
+                if (theBoard.CanBeFormed(s) && s.Length > 2)
+                {
+                    userPlayWord.Word = s;
+                    q = client.DoPutAsync(userPlayWord, "games/" + gameID.ToString()).Result;
+                    Assert.AreEqual(OK, q.Status);
+                    users = new ExpandoObject();
+                    users.Score = q.Data.Score;
+                    if (users.Score > 0)
+                    {
+                        didItPlay = true;
+                        break;
+                    }
+                }
+            }
+            if (didItPlay == false)
+                Assert.Fail();
+        }
+
+        [TestMethod]
+        public void PlayWordOnTheBoardTwice()
+        {
+            // player 1, Jeb, register, join
+            dynamic users = new ExpandoObject();
+            users.Nickname = "Jeb";
+            Response q = client.DoPostAsync("users", users).Result;
+            users = new ExpandoObject();
+            users.UserToken = q.Data.UserToken;
+            users.TimeLimit = 80;
+            q = client.DoPostAsync("games", users).Result;
+
+            // p2, Bob, reg, join
+            users = new ExpandoObject();
+            users.Nickname = "Bob";
+            q = client.DoPostAsync("users", users).Result;
+            users = new ExpandoObject();
+            users.UserToken = q.Data.UserToken;
+            users.TimeLimit = 80;
+            dynamic userPlayWord = new ExpandoObject();
+            userPlayWord.UserToken = q.Data.UserToken;
+            userPlayWord.Word = "ok";
+            q = client.DoPostAsync("games", users).Result;
+
+            Thread.Sleep(500);
+            int gameID = q.Data.GameID;
+            Response r = client.DoGetAsync("games/" + gameID.ToString()).Result;
+            string gameBoardLetters = r.Data.Board;
+
+            BoggleBoard theBoard = new BoggleBoard(gameBoardLetters);
+            bool didItPlay = false;
+            foreach (string s in dictionaryWords)
+            {
+                if (theBoard.CanBeFormed(s) && s.Length > 2)
+                {
+                    userPlayWord.Word = s;
+                    q = client.DoPutAsync(userPlayWord, "games/" + gameID.ToString()).Result;
+                    q = client.DoPutAsync(userPlayWord, "games/" + gameID.ToString()).Result;
+                    Assert.AreEqual(OK, q.Status);
+                    users = new ExpandoObject();
+                    users.Score = q.Data.Score;
+                    if (users.Score > -1)
+                    {
+                        Assert.AreEqual(users.Score.ToString(), "0");
+                        didItPlay = true;
+                        break;
+                    }
+                }
+            }
+            if (didItPlay == false)
+                Assert.Fail();
         }
 
         [TestMethod]

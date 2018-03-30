@@ -74,6 +74,12 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BoggleService\BoggleService.csproj">
+      <Project>{27879b14-6f92-4fd5-b48e-723c9f6ee7b7}</Project>
+      <Name>BoggleService</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>

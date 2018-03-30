@@ -250,7 +250,9 @@ namespace Boggle
                     }
                     else // Invalid word played
                     {
-                        tempScore = -1;
+                        if (theWord.Length > 2) {
+                            tempScore = -1;
+                        }
                         //add to words played and decrement a point
                         WordScore wordScoreToAdd = new WordScore();
                         wordScoreToAdd.Word = theWord;
