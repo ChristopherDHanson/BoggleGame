@@ -437,7 +437,7 @@ namespace Boggle
         }
 
         /// <summary>
-        /// Play (as P1) valid word that has already been played, expect score of 0
+        /// Play (as Player 1) valid word that has already been played, expect score of 0
         /// </summary>
         [TestMethod]
         public void PlayWordOnTheBoardTwiceAsPlayer1()
