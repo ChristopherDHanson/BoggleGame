@@ -249,7 +249,6 @@ namespace Boggle
             userPlayWord.Word = "testword";
             q = client.DoPostAsync("games", users).Result;
 
-            Thread.Sleep(500);
             int gameID = q.Data.GameID;
             q = client.DoPutAsync(userPlayWord, "games/" + gameID.ToString()).Result;
             Assert.AreEqual(OK, q.Status);
@@ -282,7 +281,6 @@ namespace Boggle
             userPlayWord.Word = "ok";
             q = client.DoPostAsync("games", users).Result;
 
-            Thread.Sleep(500);
             int gameID = q.Data.GameID;
             q = client.DoPutAsync(userPlayWord, "games/" + gameID.ToString()).Result;
             Assert.AreEqual(OK, q.Status);
@@ -315,7 +313,6 @@ namespace Boggle
             userPlayWord.Word = "ok";
             q = client.DoPostAsync("games", users).Result;
 
-            Thread.Sleep(500);
             int gameID = q.Data.GameID;
             Response r = client.DoGetAsync("games/" + gameID.ToString()).Result;
             string gameBoardLetters = r.Data.Board;
@@ -366,7 +363,6 @@ namespace Boggle
             userPlayWord.Word = "ok";
             q = client.DoPostAsync("games", users).Result;
 
-            Thread.Sleep(500);
             int gameID = q.Data.GameID;
             Response r = client.DoGetAsync("games/" + gameID.ToString()).Result;
             string gameBoardLetters = r.Data.Board;
@@ -420,7 +416,6 @@ namespace Boggle
             userPlayWord.Word = "ok";
             q = client.DoPostAsync("games", users).Result;
 
-            Thread.Sleep(500);
             int gameID = q.Data.GameID;
             Response r = client.DoGetAsync("games/" + gameID.ToString()).Result;
             string gameBoardLetters = r.Data.Board;
