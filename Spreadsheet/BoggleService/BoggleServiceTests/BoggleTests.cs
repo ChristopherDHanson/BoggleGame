@@ -67,6 +67,7 @@ namespace Boggle
                 }
               
             }
+
         }
 
 
@@ -81,9 +82,11 @@ namespace Boggle
 
         private RestTestClient client = new RestTestClient("http://localhost:60000/BoggleService.svc/");
 
+
         [TestMethod]
         public void TestPendingStatus()
         {
+
             dynamic users = new ExpandoObject();
             users.Nickname = "Jeb";
             Response q = client.DoPostAsync("users", users).Result;
@@ -609,6 +612,8 @@ namespace Boggle
         [TestMethod]
         public void CancelJoin()
         {
+            client.DoGetAsync("api");
+
             dynamic users = new ExpandoObject();
             users.Nickname = "Jeb";
             Response q = client.DoPostAsync("users", users).Result;
