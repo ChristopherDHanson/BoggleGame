@@ -82,6 +82,15 @@ namespace Boggle
             int gameID = k.Data.GameID;
             Response t = client.DoGetAsync("games/"+gameID, "").Result;
             Assert.AreEqual("pending", t.Data.GameState.ToString());
+
+            // Clean up dangling pending player
+            dynamic cleaner = new ExpandoObject();
+            cleaner.Nickname = "Cleaner";
+            q = client.DoPostAsync("users", cleaner).Result;
+            dynamic cleanerInfo = new ExpandoObject();
+            cleanerInfo.UserToken = q.Data.UserToken;
+            cleanerInfo.TimeLimit = 120;
+            k = client.DoPostAsync("games", cleanerInfo).Result;
         }
 
         [TestMethod]
@@ -150,7 +159,6 @@ namespace Boggle
 
             Response r = client.DoPostAsync("games", users).Result;
             Assert.AreEqual(Forbidden, r.Status);
-
         }
 
         [TestMethod]
@@ -166,6 +174,15 @@ namespace Boggle
             users = new ExpandoObject();
             q = client.DoPutAsync(users, "games").Result;
             Assert.AreEqual(Accepted, r.Status);
+
+            // Clean up dangling pending player
+            dynamic cleaner = new ExpandoObject();
+            cleaner.Nickname = "Cleaner";
+            q = client.DoPostAsync("users", cleaner).Result;
+            dynamic cleanerInfo = new ExpandoObject();
+            cleanerInfo.UserToken = q.Data.UserToken;
+            cleanerInfo.TimeLimit = 120;
+            q = client.DoPostAsync("games", cleanerInfo).Result;
         }
 
         [TestMethod]
@@ -181,12 +198,48 @@ namespace Boggle
             r = client.DoPostAsync("games", users).Result;
             r = client.DoPostAsync("games", users).Result;
             Assert.AreEqual(Conflict, r.Status);
+
+            // Clean up dangling pending player
+            dynamic cleaner = new ExpandoObject();
+            cleaner.Nickname = "Cleaner";
+            q = client.DoPostAsync("users", cleaner).Result;
+            dynamic cleanerInfo = new ExpandoObject();
+            cleanerInfo.UserToken = q.Data.UserToken;
+            cleanerInfo.TimeLimit = 120;
+            q = client.DoPostAsync("games", cleanerInfo).Result;
         }
 
         [TestMethod]
-        public void TestMethod10()
+        public void PlayWordBasicTest()
         {
-            Assert.Fail();
+            // player 1, Jeb, register, join
+            dynamic users = new ExpandoObject();
+            users.Nickname = "Jeb";
+            Response q = client.DoPostAsync("users", users).Result;
+            users = new ExpandoObject();
+            users.UserToken = q.Data.UserToken;
+            users.TimeLimit = 80;
+            q = client.DoPostAsync("games", users).Result;
+
+            // p2, Bob, reg, join
+            users = new ExpandoObject();
+            users.Nickname = "Bob";
+            q = client.DoPostAsync("users", users).Result;
+            users = new ExpandoObject();
+            users.UserToken = q.Data.UserToken;
+            users.TimeLimit = 80;
+            dynamic userPlayWord = new ExpandoObject();
+            userPlayWord.UserToken = q.Data.UserToken;
+            userPlayWord.Word = "testword";
+            q = client.DoPostAsync("games", users).Result;
+
+            Thread.Sleep(500);
+            int gameID = q.Data.GameID;
+            q = client.DoPutAsync(userPlayWord, "games/" + gameID.ToString()).Result;
+            Assert.AreEqual(OK, q.Status);
+            users = new ExpandoObject();
+            users.Score = q.Data.Score;
+            Assert.AreEqual("-1", users.Score.ToString());
         }
 
         [TestMethod]
