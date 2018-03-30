@@ -259,12 +259,12 @@ namespace Boggle
                         wordScoreToAdd.Score = tempScore;
                         if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
                         {
-                            games[gameID].GameStatus.Player1.Score--;
+                            games[gameID].GameStatus.Player1.Score-=tempScore;
                             games[gameID].GameStatus.Player1.WordsPlayed.Add(wordScoreToAdd);
                         }
                         else // user is Player2
                         {
-                            games[gameID].GameStatus.Player2.Score--;
+                            games[gameID].GameStatus.Player2.Score-=tempScore;
                             games[gameID].GameStatus.Player2.WordsPlayed.Add(wordScoreToAdd);
                         }
                     }
