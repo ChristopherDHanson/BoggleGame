@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.IO;
 using System.Net;
 using System.ServiceModel.Web;
@@ -27,6 +29,7 @@ namespace Boggle
         //holds the dictionary of valid and playable words.
         private static HashSet<string> dictionaryWords = new HashSet<string>(); // words that are valid inputs
         private static readonly object sync = new object();
+        private static string BoggleServiceDB;
 
         /// <summary>
         /// The most recent call to SetStatus determines the response code used when
@@ -397,32 +400,47 @@ namespace Boggle
         /// <returns></returns>
         private bool HasBeenPlayed(string userToken, string gameID, string targetWord)
         {
-            lock (sync)
+            using (SqlConnection conn = new SqlConnection(BoggleServiceDB))
             {
-                IList<WordScore> tempList;
+                conn.Open();
 
-                //check the if the gameID has the user in it
-                if (games[gameID].Player1Token.Equals(userToken))
+                using (SqlTransaction trans = conn.BeginTransaction())
                 {
-                    tempList = games[gameID].GameStatus.Player1.WordsPlayed;
 
-                    //check each word played by the user and return true if the word has been played
-                    foreach (WordScore word in tempList)
+                    using (SqlCommand command = new SqlCommand(
+                        "insert into * (UserID, Name, Email) values(@UserID, @Nickname, @Email)",
+                        conn,
+                        trans))
                     {
-                        if (word.Word.Equals(targetWord)) return true;
+
+                        //TO BE MODIFIED
+                        IList<WordScore> tempList;
+
+                        //check the if the gameID has the user in it
+                        if (games[gameID].Player1Token.Equals(userToken))
+                        {
+                            tempList = games[gameID].GameStatus.Player1.WordsPlayed;
+
+                            //check each word played by the user and return true if the word has been played
+                            foreach (WordScore word in tempList)
+                            {
+                                if (word.Word.Equals(targetWord)) return true;
+                            }
+                        }
+                        else //true if it has been played for player2
+                        {
+                            tempList = games[gameID].GameStatus.Player2.WordsPlayed;
+                            foreach (WordScore word in tempList)
+                            {
+                                if (word.Word.Equals(targetWord)) return true;
+                            }
+                        }
+
+                        //false otherwise
+                        return false;
+                        //TO BE MODIFIED
                     }
                 }
-                else //true if it has been played for player2
-                {
-                    tempList = games[gameID].GameStatus.Player2.WordsPlayed;
-                    foreach (WordScore word in tempList)
-                    {
-                        if (word.Word.Equals(targetWord)) return true;
-                    }
-                }
-
-                //false otherwise
-                return false;
             }
         }
     }
