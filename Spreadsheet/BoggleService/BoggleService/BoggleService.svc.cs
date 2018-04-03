@@ -171,6 +171,74 @@ namespace Boggle
         /// <returns>Returns new GameID</returns>
         public GameIDOnly Join(TokenTime tkTime)
         {
+            //must be a valid UserToken
+            if (!users.ContainsKey(tkTime.UserToken) || tkTime.TimeLimit < 5 || tkTime.TimeLimit > 120)
+            {
+                SetStatus(Forbidden);
+                return null;
+            }
+            else if (gameIsPending && games[pendingGameID].Player1Token.Equals(tkTime.UserToken)) // This user is already pending
+            {
+                SetStatus(Conflict);
+                return null;
+            }
+            else // Otherwise, we will have to mess with DB
+            {
+                using (SqlConnection conn = new SqlConnection(BoggleServiceDB))
+                {
+                    conn.Open();
+                    using (SqlTransaction trans = conn.BeginTransaction())
+                    {
+                        if (!gameIsPending) // No pending game
+                        {
+                            using (SqlCommand command = 
+                                new SqlCommand("insert into Games (Player1, Board, TimeLimit) values(@Player1, @Board, @TimeLimit)", conn, trans))
+                            {
+                                command.Parameters.AddWithValue("@Player1", tkTime.UserToken);
+                                BoggleBoard tempBBoard = new BoggleBoard();
+                                command.Parameters.AddWithValue("@Board", tempBBoard.ToString());
+                                command.Parameters.AddWithValue("@TimeLimit", tkTime.TimeLimit);
+
+                                GameIDOnly gameIDReturn = new GameIDOnly();
+                                gameIDReturn.GameID = command.ExecuteScalar().ToString();
+                                SetStatus(Created);
+
+                                trans.Commit();
+                                return gameIDReturn;
+                            }
+                        }
+                        else // Second player found, match begins
+                        {
+                            using (SqlCommand command = 
+                                new SqlCommand("insert into Games (Player2, TimeLimit, StartTime) values(@Player2, @TimeLimit, @StartTime)", conn, trans))
+                            {
+                                int? newTLimit;
+                                command.Parameters.AddWithValue("@Player2", tkTime.UserToken);
+                                using (SqlCommand selectPrevTimeLimit = new SqlCommand("Select TimeLimit from Games where Player2 = null"))
+                                { // CHECK the command above; IT IS PROBABLY NOT CORRECT
+                                    using (SqlDataReader reader = selectPrevTimeLimit.ExecuteReader())
+                                    {
+                                        reader.Read(); // Maybe unnecessary
+                                        int oldTimeLimit = reader.GetInt32(0);
+                                        newTLimit = (tkTime.TimeLimit + oldTimeLimit) / 2;
+                                    }
+                                }
+                                command.Parameters.AddWithValue("@TimeLimit", newTLimit);
+                                command.Parameters.AddWithValue("@StartTime", Environment.TickCount);
+
+                                GameIDOnly gameIDReturn = new GameIDOnly();
+                                gameIDReturn.GameID = command.ExecuteScalar().ToString();
+                                SetStatus(Created);
+                                gameIsPending = false;
+
+                                trans.Commit();
+                                return gameIDReturn;
+                            }
+                        }
+                    }
+                }
+            }
+
             lock (sync)
             {
                 //must be a valid UserToken
@@ -246,23 +314,44 @@ namespace Boggle
         /// <param name="userTkn">Contains UserToken</param>
         public void CancelJoin(Token userTkn)
         {
-            lock (sync)
+            using (SqlConnection conn = new SqlConnection(BoggleServiceDB))
             {
-                //must be a user that is pending finding a game.
-                if (!users.ContainsKey(userTkn.UserToken) ||
-                    !userTkn.UserToken.Equals(games[pendingGameID].Player1Token))
+                conn.Open();
+                using (SqlTransaction trans = conn.BeginTransaction())
                 {
-                    SetStatus(Forbidden);
-                }
-                else if (gameIsPending && userTkn.UserToken.Equals(games[pendingGameID].Player1Token))
-                {
-                    // Remove pending game
-                    games.Remove(pendingGameID);
-                    pendingGameID = null;
-                    gameIsPending = false;
-                    SetStatus(OK);
+                    using (SqlCommand deleteCmd = new SqlCommand("delete from Games where Player1 = @Player1 and Player2 = null", conn, trans))
+                    {
+                        deleteCmd.Parameters.AddWithValue("@Player1", userTkn.UserToken);
+                        if (deleteCmd.ExecuteNonQuery() == 0)
+                        {
+                            SetStatus(Forbidden);
+                        }
+                        else
+                        {
+                            SetStatus(OK);
+                        }
+                        trans.Commit();
+                    }
                 }
             }
+
+            //lock (sync)
+            //{
+            //    //must be a user that is pending finding a game.
+            //    if (!users.ContainsKey(userTkn.UserToken) ||
+            //        !userTkn.UserToken.Equals(games[pendingGameID].Player1Token))
+            //    {
+            //        SetStatus(Forbidden);
+            //    }
+            //    else if (gameIsPending && userTkn.UserToken.Equals(games[pendingGameID].Player1Token))
+            //    {
+            //        // Remove pending game
+            //        games.Remove(pendingGameID);
+            //        pendingGameID = null;
+            //        gameIsPending = false;
+            //        SetStatus(OK);
+            //    }
+            //}
         }
 
         /// <summary>
@@ -272,6 +361,8 @@ namespace Boggle
         /// <param name="gameID">The GameID of target game</param>
         public ScoreOnly PlayWord(TokenWord wordToPlay, string gameID)
         {
+
+
             lock (sync)
             {
                 //if not a valid wordm return null and update server.
