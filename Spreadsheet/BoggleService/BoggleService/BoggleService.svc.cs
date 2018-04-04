@@ -361,104 +361,85 @@ namespace Boggle
         /// <param name="gameID">The GameID of target game</param>
         public ScoreOnly PlayWord(TokenWord wordToPlay, string gameID)
         {
+            if (wordToPlay.Word == null || wordToPlay.Word.Equals("") || wordToPlay.Word.Trim().Length > 30)
+            { // Forbidden conditions not requireing DB access
+                SetStatus(Forbidden);
+                return null;
+            }
 
-
-            lock (sync)
+            using (SqlConnection conn = new SqlConnection(BoggleServiceDB))
             {
-                //if not a valid wordm return null and update server.
-                if (wordToPlay.Word == null || wordToPlay.Word.Equals("") || wordToPlay.Word.Trim().Length > 30 ||
-                    !games.ContainsKey(gameID) || !users.ContainsKey(wordToPlay.UserToken) ||
-                    (!games[gameID].Player1Token.Equals(wordToPlay.UserToken) &&
-                     !games[gameID].Player2Token.Equals(wordToPlay.UserToken)))
+                conn.Open();
+                using (SqlTransaction trans = conn.BeginTransaction())
                 {
-                    SetStatus(Forbidden);
-                    return null;
-                } // if game isn't active, update server with a conflict status
-                else if (!games[gameID].GameStatus.GameState.Equals("active"))
-                {
-                    SetStatus(Conflict);
-                    return null;
-                }
-                else // Word will be successfully played
-                {
-                    //trim and save word with token
-                    string theWord = wordToPlay.Word.Trim().ToUpper();
-                    string theToken = wordToPlay.UserToken;
-                    ScoreOnly scoreToReturn = new ScoreOnly();
-                    int tempScore;
-                    tempScore = 0;
-
-                    //update scores according to word length
-                    if (games[gameID].GameBoard.CanBeFormed(theWord) && dictionaryWords.Contains(theWord) &&
-                        !HasBeenPlayed(wordToPlay.UserToken, gameID, wordToPlay.Word))
+                    using (SqlCommand selectGamesCmd = 
+                        new SqlCommand("select Player2, Board from Games where (Player1 = @UserToken or Player2 = @UserToken) and GameID = @GameID", conn, trans))
                     {
-                        if (theWord.Length == 3 || theWord.Length == 4) tempScore = 1;
-                        else if (theWord.Length == 5)
-                            tempScore = 2;
-                        else if (theWord.Length == 6)
-                            tempScore = 3;
-                        else if (theWord.Length == 7)
-                            tempScore = 5;
-                        else if (theWord.Length > 7)
-                            tempScore = 11;
+                        selectGamesCmd.Parameters.AddWithValue("@UserToken", wordToPlay.UserToken);
+                        selectGamesCmd.Parameters.AddWithValue("@GameID", gameID);
+                        using (SqlDataReader reader = selectGamesCmd.ExecuteReader())
+                        {
+                            if (!reader.HasRows)
+                            {
+                                SetStatus(Forbidden);
+                                trans.Commit();
+                                return null;
+                            }
+                            // if game isn't active, update server with a conflict status
+                            else if (reader.Read() && reader.GetValue(0) == null)
+                            {
+                                SetStatus(Conflict);
+                                return null;
+                            }
+                            else // word will be successfully played
+                            {
+                                string boardStr = (string)reader.GetValue(1);
+                                using (SqlCommand command =
+                                    new SqlCommand("insert into Words (Word, GameID, Player, Score) values(@Word, @GameID, @Player, @Score)", conn, trans))
+                                {
+                                    //trim and save word with token
+                                    string theWord = wordToPlay.Word.Trim().ToUpper();
+                                    string theToken = wordToPlay.UserToken;
+                                    ScoreOnly scoreToReturn = new ScoreOnly();
+                                    int tempScore = tempScore = 0;
+                                    BoggleBoard tempBoard = new BoggleBoard(boardStr);
 
-                        //add to words played and increment point
-                        WordScore wordScoreToAdd = new WordScore();
-                        wordScoreToAdd.Word = theWord;
-                        wordScoreToAdd.Score = tempScore;
-                        if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
-                        {
-                            games[gameID].GameStatus.Player1.Score += tempScore;
-                            games[gameID].GameStatus.Player1.WordsPlayed.Add(wordScoreToAdd);
-                        }
-                        else // user is Player2
-                        {
-                            games[gameID].GameStatus.Player2.Score += tempScore;
-                            games[gameID].GameStatus.Player2.WordsPlayed.Add(wordScoreToAdd);
+                                    //update scores according to word length
+                                    if (tempBoard.CanBeFormed(theWord) && dictionaryWords.Contains(theWord) &&
+                                        !HasBeenPlayed(wordToPlay.UserToken, gameID, wordToPlay.Word))
+                                    {
+                                        if (theWord.Length == 3 || theWord.Length == 4)
+                                            tempScore = 1;
+                                        else if (theWord.Length == 5)
+                                            tempScore = 2;
+                                        else if (theWord.Length == 6)
+                                            tempScore = 3;
+                                        else if (theWord.Length == 7)
+                                            tempScore = 5;
+                                        else if (theWord.Length > 7)
+                                            tempScore = 11;
+                                    }
+                                    else // Invalid word played
+                                    {
+                                        if (theWord.Length > 2)
+                                        {
+                                            tempScore = -1;
+                                        }
+                                    }
+                                    //add to words played and increment point
+                                    command.Parameters.AddWithValue("@Word", wordToPlay.Word);
+                                    command.Parameters.AddWithValue("@GameID", gameID);
+                                    command.Parameters.AddWithValue("@Player", wordToPlay.UserToken);
+                                    command.Parameters.AddWithValue("@Score", tempScore);
+
+                                    SetStatus(OK);
+                                    scoreToReturn.Score = tempScore;
+                                    trans.Commit();
+                                    return scoreToReturn;
+                                }
+                            }
                         }
                     }
-                    else if (games[gameID].GameBoard.CanBeFormed(theWord) && dictionaryWords.Contains(theWord) &&
-                             HasBeenPlayed(wordToPlay.UserToken, gameID, wordToPlay.Word))
-                    {
-                        //add to words played with 0 points
-                        WordScore wordScoreToAdd = new WordScore();
-                        wordScoreToAdd.Word = theWord;
-                        wordScoreToAdd.Score = tempScore;
-                        if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
-                        {
-                            games[gameID].GameStatus.Player1.WordsPlayed.Add(wordScoreToAdd);
-                        }
-                        else // user is Player2
-                        {
-                            games[gameID].GameStatus.Player2.WordsPlayed.Add(wordScoreToAdd);
-                        }
-                    }
-                    else // Invalid word played
-                    {
-                        if (theWord.Length > 2)
-                        {
-                            tempScore = -1;
-                        }
-
-                        //add to words played and decrement a point
-                        WordScore wordScoreToAdd = new WordScore();
-                        wordScoreToAdd.Word = theWord;
-                        wordScoreToAdd.Score = tempScore;
-                        if (games[gameID].Player1Token.Equals(theToken)) // user is Player1
-                        {
-                            games[gameID].GameStatus.Player1.Score += tempScore;
-                            games[gameID].GameStatus.Player1.WordsPlayed.Add(wordScoreToAdd);
-                        }
-                        else // user is Player2
-                        {
-                            games[gameID].GameStatus.Player2.Score += tempScore;
-                            games[gameID].GameStatus.Player2.WordsPlayed.Add(wordScoreToAdd);
-                        }
-                    }
-
-                    SetStatus(OK);
-                    scoreToReturn.Score = tempScore;
-                    return scoreToReturn;
                 }
             }
         }
