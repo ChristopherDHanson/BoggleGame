@@ -339,6 +339,91 @@ namespace Boggle
                     String query = "select Player1, Player2, Board, TimeLimit, StartTime from Games, GameID where Games.GameID = @GameID";
                     using (SqlCommand command = new SqlCommand(query, conn, trans))
                     {
+                        command.Parameters.AddWithValue("@GameID", GameID);
+                        GameStatus toReturn = new GameStatus();
+
+                        using (SqlDataReader reader = command.ExecuteReader())
+                        {
+                            toReturn.Board = (string)reader["Board"];
+                            toReturn.TimeLeft = (int)reader["TimeLeft"];
+                            toReturn.TimeLimit = (int)reader["TimeLimit"];
+
+                            query = "select Word, GameID, Player, Score from Words, GameID where Words.GameID = @GameID and Player where Words.Player = @Player";
+                            using (SqlCommand playerStatus = new SqlCommand(query, conn, trans))
+                            {
+                                //this block extracts nicknames from games user tokens.
+                                String p1name = (string)reader["Player1"];
+                                String p2name = (string)reader["Player2"];
+                                query = "select Nickname from Users, Nickname where Users.UserToken = @UserToken";
+                                using (SqlCommand player1Nickname = new SqlCommand(query, conn, trans))
+                                {
+                                    player1Nickname.Parameters.AddWithValue("@UserToken", p1name);
+                                    using (SqlDataReader nameReader = player1Nickname.ExecuteReader())
+                                    {
+                                        p1name = (string) nameReader["Nickname"];
+                                    }
+                                }
+
+                                using (SqlCommand player2Nickname = new SqlCommand(query, conn, trans))
+                                {
+                                    player2Nickname.Parameters.AddWithValue("@UserToken", p2name);
+                                    using (SqlDataReader nameReader = player2Nickname.ExecuteReader())
+                                    {
+                                        p2name = (string)nameReader["Nickname"];
+                                    }
+                                }
+
+                                int p1Score = 0;
+                                int p2Score = 0;
+                                IList<WordScore> p1WordList = new List<WordScore>();
+                                IList<WordScore> p2WordList = new List<WordScore>();
+                                playerStatus.Parameters.AddWithValue("@GameID", GameID);
+                                playerStatus.Parameters.AddWithValue("@Player", (string)reader["Player1"]);
+                                using (SqlDataReader wordAndScoreP1 = playerStatus.ExecuteReader())
+                                {
+                                    while (wordAndScoreP1.Read())
+                                    {
+                                        WordScore tempWS = new WordScore();
+                                        tempWS.Word = (string)wordAndScoreP1["Word"];
+                                        tempWS.Score = (int)wordAndScoreP1["Score"];
+                                        p1WordList.Add(tempWS);
+                                        p1Score += (int)wordAndScoreP1["Score"];
+                                    }
+                                }
+
+                                playerStatus.Parameters.AddWithValue("@GameID", GameID);
+                                playerStatus.Parameters.AddWithValue("@Player", (string)reader["Player2"]);
+                                using (SqlDataReader wordAndScoreP2 = playerStatus.ExecuteReader())
+                                {
+                                    while (wordAndScoreP2.Read())
+                                    {
+                                        WordScore tempWS = new WordScore();
+                                        tempWS.Word = (string) wordAndScoreP2["Word"];
+                                        tempWS.Score = (int)wordAndScoreP2["Score"];
+                                        p2WordList.Add(tempWS);
+                                        p2Score += (int)wordAndScoreP2["Score"];
+                                    }
+                                }
+
+                                toReturn.Player1 = (new PlayerStatus()
+                                {
+                                    Nickname = p1name,
+                                    Score = p1Score,
+                                    WordsPlayed = p1WordList
+                                }); //create new PlayerStatus obj from this token to info in Users table DB
+                                    
+                                toReturn.Player2 = (new PlayerStatus
+                                {
+                                    Nickname = p2name,
+                                    Score = p2Score,
+                                    WordsPlayed = p2WordList
+                                }); //create new PlayerStatus obj from this token to info in Users table DB
+
+                            }
+                        }
+
+                        //Return logic goes here
+
                     }
 
                     //
@@ -404,8 +489,8 @@ namespace Boggle
                         //                    }
                         //
                         //                    //update server
-                        //                    SetStatus(OK);
-                        //                    return toReturn;
+//                                            SetStatus(OK);
+//                                            return toReturn;
                         return null;
                     
                 }
