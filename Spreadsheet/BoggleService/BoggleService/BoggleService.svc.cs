@@ -335,7 +335,7 @@ namespace Boggle
                         }
                     }
 
-
+                    int startTime;
                     String query = "select Player1, Player2, Board, TimeLimit, StartTime from Games, GameID where Games.GameID = @GameID";
                     using (SqlCommand command = new SqlCommand(query, conn, trans))
                     {
@@ -344,16 +344,17 @@ namespace Boggle
 
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
-                            toReturn.Board = (string)reader["Board"];
-                            toReturn.TimeLeft = (int)reader["TimeLeft"];
-                            toReturn.TimeLimit = (int)reader["TimeLimit"];
+                            toReturn.Board = (string) reader["Board"];
+                            toReturn.TimeLeft = (int) reader["TimeLeft"];
+                            toReturn.TimeLimit = (int) reader["TimeLimit"];
 
-                            query = "select Word, GameID, Player, Score from Words, GameID where Words.GameID = @GameID and Player where Words.Player = @Player";
+                            query =
+                                "select Word, GameID, Player, Score from Words, GameID where Words.GameID = @GameID and Player where Words.Player = @Player";
                             using (SqlCommand playerStatus = new SqlCommand(query, conn, trans))
                             {
                                 //this block extracts nicknames from games user tokens.
-                                String p1name = (string)reader["Player1"];
-                                String p2name = (string)reader["Player2"];
+                                String p1name = (string) reader["Player1"];
+                                String p2name = (string) reader["Player2"];
                                 query = "select Nickname from Users, Nickname where Users.UserToken = @UserToken";
                                 using (SqlCommand player1Nickname = new SqlCommand(query, conn, trans))
                                 {
@@ -369,7 +370,7 @@ namespace Boggle
                                     player2Nickname.Parameters.AddWithValue("@UserToken", p2name);
                                     using (SqlDataReader nameReader = player2Nickname.ExecuteReader())
                                     {
-                                        p2name = (string)nameReader["Nickname"];
+                                        p2name = (string) nameReader["Nickname"];
                                     }
                                 }
 
@@ -378,30 +379,30 @@ namespace Boggle
                                 IList<WordScore> p1WordList = new List<WordScore>();
                                 IList<WordScore> p2WordList = new List<WordScore>();
                                 playerStatus.Parameters.AddWithValue("@GameID", GameID);
-                                playerStatus.Parameters.AddWithValue("@Player", (string)reader["Player1"]);
+                                playerStatus.Parameters.AddWithValue("@Player", (string) reader["Player1"]);
                                 using (SqlDataReader wordAndScoreP1 = playerStatus.ExecuteReader())
                                 {
                                     while (wordAndScoreP1.Read())
                                     {
                                         WordScore tempWS = new WordScore();
-                                        tempWS.Word = (string)wordAndScoreP1["Word"];
-                                        tempWS.Score = (int)wordAndScoreP1["Score"];
+                                        tempWS.Word = (string) wordAndScoreP1["Word"];
+                                        tempWS.Score = (int) wordAndScoreP1["Score"];
                                         p1WordList.Add(tempWS);
-                                        p1Score += (int)wordAndScoreP1["Score"];
+                                        p1Score += (int) wordAndScoreP1["Score"];
                                     }
                                 }
 
                                 playerStatus.Parameters.AddWithValue("@GameID", GameID);
-                                playerStatus.Parameters.AddWithValue("@Player", (string)reader["Player2"]);
+                                playerStatus.Parameters.AddWithValue("@Player", (string) reader["Player2"]);
                                 using (SqlDataReader wordAndScoreP2 = playerStatus.ExecuteReader())
                                 {
                                     while (wordAndScoreP2.Read())
                                     {
                                         WordScore tempWS = new WordScore();
                                         tempWS.Word = (string) wordAndScoreP2["Word"];
-                                        tempWS.Score = (int)wordAndScoreP2["Score"];
+                                        tempWS.Score = (int) wordAndScoreP2["Score"];
                                         p2WordList.Add(tempWS);
-                                        p2Score += (int)wordAndScoreP2["Score"];
+                                        p2Score += (int) wordAndScoreP2["Score"];
                                     }
                                 }
 
@@ -411,7 +412,7 @@ namespace Boggle
                                     Score = p1Score,
                                     WordsPlayed = p1WordList
                                 }); //create new PlayerStatus obj from this token to info in Users table DB
-                                    
+
                                 toReturn.Player2 = (new PlayerStatus
                                 {
                                     Nickname = p2name,
@@ -420,79 +421,66 @@ namespace Boggle
                                 }); //create new PlayerStatus obj from this token to info in Users table DB
 
                             }
+
+                            DateTime temp = (DateTime)reader["StartTime"];
+                            startTime = temp.Millisecond;
                         }
 
                         //Return logic goes here
+                                //returns needed status update if pending, active, or completed and if isBrief == yes
+                                if (toReturn.Player2 == null)
+                                {
+                                    toReturn.GameState = "pending";
+                                    toReturn.Board = null;
+                                    toReturn.Player1 = null;
+                                    toReturn.Player2 = null;
+                                    toReturn.TimeLeft = null;
+                                    toReturn.TimeLimit = null;
+                                }
+                                else
+                                {
+                                    //calculate time remaining to return
+                                    int timeNow = Environment.TickCount;
+                                    int? timeRemaining = toReturn.TimeLimit -
+                                                            ((timeNow - startTime) / 1000);
+                        
+                                    //if timeremaining is 0 return completed
+                                    if (timeRemaining <= 0)
+                                    {
+                                        toReturn.TimeLeft = 0;
+                                        toReturn.GameState = "completed";
+                                    }
+                                    else
+                                    {
+                                        toReturn.TimeLeft = timeRemaining;
+                                    }
+                        
+                                    //active or completed and brief response, return necessary format and update datamodel
+                                    if (toReturn.Player2 != null && (isBrief != null && isBrief.Equals("yes"))) // Active or completed, brief response
+                                    {
+                                        if (!(timeRemaining <= 0))
+                                            toReturn.GameState = "active";
 
+                                        toReturn.Board = null;
+                                        toReturn.Player1 = new PlayerStatus();
+                                        toReturn.Player1.Score = toReturn.Player1.Score;
+                                        toReturn.Player2 = new PlayerStatus();
+                                        toReturn.Player2.Score = toReturn.Player2.Score;
+                                        toReturn.TimeLeft = toReturn.TimeLeft;
+                                        toReturn.TimeLimit = null;
+                                    }
+                                    //else return non brief responses
+                                    else if (toReturn.GameState.Equals("completed") &&
+                                                (isBrief == null || !isBrief.Equals("yes"))) // Completed full
+                                    {
+                                        toReturn = games[GameID].GameStatus;
+                                    }
+                                }
+                        
+                                //update server
+                                SetStatus(OK);
+                                return toReturn;
                     }
-
-                    //
-                        //                    //returns needed status update if pending, active, or completed and if isBrief == yes
-                        //                    GameStatus toReturn = new GameStatus();
-                        //                    if (games[GameID].GameStatus.GameState.Equals("pending"))
-                        //                    {
-                        //                        toReturn.GameState = games[GameID].GameStatus.GameState;
-                        //                        toReturn.Board = null;
-                        //                        toReturn.Player1 = null;
-                        //                        toReturn.Player2 = null;
-                        //                        toReturn.TimeLeft = null;
-                        //                        toReturn.TimeLimit = null;
-                        //                    }
-                        //                    else
-                        //                    {
-                        //                        //calculate time remaining to return
-                        //                        int timeNow = Environment.TickCount;
-                        //                        int? timeRemaining = games[GameID].GameStatus.TimeLimit -
-                        //                                             ((timeNow - games[GameID].StartTime) / 1000);
-                        //
-                        //                        //if timeremaining is 0 return completed
-                        //                        if (timeRemaining <= 0)
-                        //                        {
-                        //                            games[GameID].GameStatus.TimeLeft = 0;
-                        //                            games[GameID].GameStatus.GameState = "completed";
-                        //                        }
-                        //                        else
-                        //                        {
-                        //                            games[GameID].GameStatus.TimeLeft = timeRemaining;
-                        //                        }
-                        //
-                        //                        //active or completed and brief response, return necessary format and update datamodel
-                        //                        if ((games[GameID].GameStatus.GameState.Equals("active") ||
-                        //                             games[GameID].GameStatus.GameState.Equals("completed")) &&
-                        //                            (isBrief != null && isBrief.Equals("yes"))) // Active or completed, brief response
-                        //                        {
-                        //                            toReturn.GameState = games[GameID].GameStatus.GameState;
-                        //                            toReturn.Board = null;
-                        //                            toReturn.Player1 = new PlayerStatus();
-                        //                            toReturn.Player1.Score = games[GameID].GameStatus.Player1.Score;
-                        //                            toReturn.Player2 = new PlayerStatus();
-                        //                            toReturn.Player2.Score = games[GameID].GameStatus.Player2.Score;
-                        //                            toReturn.TimeLeft = games[GameID].GameStatus.TimeLeft;
-                        //                            toReturn.TimeLimit = null;
-                        //                        }
-                        //                        //else return non brief responses
-                        //                        else if (games[GameID].GameStatus.GameState.Equals("active") &&
-                        //                                 (isBrief == null || !isBrief.Equals("yes"))) // Active full response
-                        //                        {
-                        //                            toReturn.GameState = games[GameID].GameStatus.GameState;
-                        //                            toReturn.Board = games[GameID].GameStatus.Board;
-                        //                            toReturn.Player1 = games[GameID].GameStatus.Player1;
-                        //                            toReturn.Player2 = games[GameID].GameStatus.Player2;
-                        //                            toReturn.TimeLeft = games[GameID].GameStatus.TimeLeft;
-                        //                            toReturn.TimeLimit = games[GameID].GameStatus.TimeLimit;
-                        //                        }
-                        //                        else if (games[GameID].GameStatus.GameState.Equals("completed") &&
-                        //                                 (isBrief == null || !isBrief.Equals("yes"))) // Completed full
-                        //                        {
-                        //                            toReturn = games[GameID].GameStatus;
-                        //                        }
-                        //                    }
-                        //
-                        //                    //update server
-//                                            SetStatus(OK);
-//                                            return toReturn;
-                        return null;
-                    
                 }
             }
         }
