@@ -239,73 +239,73 @@ namespace Boggle
                 }
             }
 
-            lock (sync)
-            {
-                //must be a valid UserToken
-                if (!users.ContainsKey(tkTime.UserToken) || tkTime.TimeLimit < 5 || tkTime.TimeLimit > 120)
-                {
-                    SetStatus(Forbidden);
-                    return null;
-                }
-
-                if (!gameIsPending)
-                {
-                    // Creates a new pending game if none exists, adds this player as P1
-                    Game newGame = new Game();
-                    newGame.Player1Token = tkTime.UserToken;
-                    pendingGameID = gameCounter.ToString();
-                    newGame.GameID = pendingGameID;
-
-                    //initialize player information in DataModel
-                    newGame.GameStatus = new GameStatus();
-                    newGame.GameStatus.GameState = "pending";
-                    newGame.GameStatus.Player1 = new PlayerStatus();
-                    newGame.GameStatus.Player1.WordsPlayed = new List<WordScore>();
-                    newGame.GameStatus.Player1.Nickname = users[tkTime.UserToken].Nickname;
-                    newGame.GameStatus.Player1.Score = 0;
-                    newGame.GameBoard = new BoggleBoard();
-                    newGame.GameStatus.Board = newGame.GameBoard.ToString();
-
-                    //Add player to game
-                    gameIsPending = true;
-                    gameCounter++;
-                    games.Add(pendingGameID, newGame);
-                    games[pendingGameID].GameStatus.TimeLimit = tkTime.TimeLimit;
-
-                    //update server status
-                    SetStatus(Accepted);
-                    GameIDOnly idToReturn = new GameIDOnly();
-                    idToReturn.GameID = pendingGameID;
-                    return idToReturn;
-                }
-                else if (gameIsPending && games[pendingGameID].Player1Token.Equals(tkTime.UserToken)
-                ) // This user is already pending
-                {
-                    SetStatus(Conflict);
-                    return null;
-                }
-                else // Second player found, match begins
-                {
-                    games[pendingGameID].GameStatus.TimeLimit =
-                        (tkTime.TimeLimit + games[pendingGameID].GameStatus.TimeLimit) / 2;
-                    games[pendingGameID].GameStatus.GameState = "active";
-
-                    //initialize player3's information and DataModel
-                    games[pendingGameID].Player2Token = tkTime.UserToken;
-                    games[pendingGameID].GameStatus.Player2 = new PlayerStatus();
-                    games[pendingGameID].GameStatus.Player2.WordsPlayed = new List<WordScore>();
-                    games[pendingGameID].GameStatus.Player2.Nickname = users[tkTime.UserToken].Nickname;
-                    games[pendingGameID].GameStatus.Player2.Score = 0;
-
-                    //update game and server status
-                    gameIsPending = false;
-                    SetStatus(Created);
-                    GameIDOnly idToReturn = new GameIDOnly();
-                    idToReturn.GameID = pendingGameID;
-                    games[pendingGameID].StartTime = Environment.TickCount;
-                    return idToReturn;
-                }
-            }
+//            lock (sync)
+//            {
+//                //must be a valid UserToken
+//                if (!users.ContainsKey(tkTime.UserToken) || tkTime.TimeLimit < 5 || tkTime.TimeLimit > 120)
+//                {
+//                    SetStatus(Forbidden);
+//                    return null;
+//                }
+//
+//                if (!gameIsPending)
+//                {
+//                    // Creates a new pending game if none exists, adds this player as P1
+//                    Game newGame = new Game();
+//                    newGame.Player1Token = tkTime.UserToken;
+//                    pendingGameID = gameCounter.ToString();
+//                    newGame.GameID = pendingGameID;
+//
+//                    //initialize player information in DataModel
+//                    newGame.GameStatus = new GameStatus();
+//                    newGame.GameStatus.GameState = "pending";
+//                    newGame.GameStatus.Player1 = new PlayerStatus();
+//                    newGame.GameStatus.Player1.WordsPlayed = new List<WordScore>();
+//                    newGame.GameStatus.Player1.Nickname = users[tkTime.UserToken].Nickname;
+//                    newGame.GameStatus.Player1.Score = 0;
+//                    newGame.GameBoard = new BoggleBoard();
+//                    newGame.GameStatus.Board = newGame.GameBoard.ToString();
+//
+//                    //Add player to game
+//                    gameIsPending = true;
+//                    gameCounter++;
+//                    games.Add(pendingGameID, newGame);
+//                    games[pendingGameID].GameStatus.TimeLimit = tkTime.TimeLimit;
+//
+//                    //update server status
+//                    SetStatus(Accepted);
+//                    GameIDOnly idToReturn = new GameIDOnly();
+//                    idToReturn.GameID = pendingGameID;
+//                    return idToReturn;
+//                }
+//                else if (gameIsPending && games[pendingGameID].Player1Token.Equals(tkTime.UserToken)
+//                ) // This user is already pending
+//                {
+//                    SetStatus(Conflict);
+//                    return null;
+//                }
+//                else // Second player found, match begins
+//                {
+//                    games[pendingGameID].GameStatus.TimeLimit =
+//                        (tkTime.TimeLimit + games[pendingGameID].GameStatus.TimeLimit) / 2;
+//                    games[pendingGameID].GameStatus.GameState = "active";
+//
+//                    //initialize player3's information and DataModel
+//                    games[pendingGameID].Player2Token = tkTime.UserToken;
+//                    games[pendingGameID].GameStatus.Player2 = new PlayerStatus();
+//                    games[pendingGameID].GameStatus.Player2.WordsPlayed = new List<WordScore>();
+//                    games[pendingGameID].GameStatus.Player2.Nickname = users[tkTime.UserToken].Nickname;
+//                    games[pendingGameID].GameStatus.Player2.Score = 0;
+//
+//                    //update game and server status
+//                    gameIsPending = false;
+//                    SetStatus(Created);
+//                    GameIDOnly idToReturn = new GameIDOnly();
+//                    idToReturn.GameID = pendingGameID;
+//                    games[pendingGameID].StartTime = Environment.TickCount;
+//                    return idToReturn;
+//                }
+//            }
         }
 
         /// <summary>
