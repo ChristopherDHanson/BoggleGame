@@ -12,7 +12,7 @@ using static System.Net.HttpStatusCode;
 /// This namespace acts as the logic for a server that users can connect to, in order to play other users in a Bogglegame. It implements
 /// IBoggleService, and uses BoggleBoard for the board layout.
 /// 
-/// Authors: Bryce Hansen, Chris Hanson
+/// Authors: Bryce Hansen, Chris Hanson.
 /// </summary>
 namespace Boggle
 {
