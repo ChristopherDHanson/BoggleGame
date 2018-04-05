@@ -634,6 +634,7 @@ namespace Boggle
                                 }
                         
                                 //update server
+                                trans.Commit();
                                 SetStatus(OK);
                                 return toReturn;
                     }
