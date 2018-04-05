@@ -176,12 +176,18 @@ namespace Boggle
                     {
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
-                            if (reader.HasRows && reader.Read())// && reader.GetString(0).Equals(tkTime.UserToken)) // This user is already pending
+                            if (reader.HasRows && reader.Read()) // This user is already pending
                             {
-                                SetStatus(Conflict);
-                                reader.Close();
-                                trans.Commit();
-                                return null;
+                                while (reader.Read())
+                                {
+                                    if (reader.GetString(0).Equals(tkTime.UserToken))
+                                    {
+                                        SetStatus(Conflict);
+                                        reader.Close();
+                                        trans.Commit();
+                                        return null;
+                                    }
+                                }
                             }
                             else if (!reader.HasRows) // No pending game
                             {
@@ -209,7 +215,7 @@ namespace Boggle
                     {
                         int? newTLimit;
                         command.Parameters.AddWithValue("@Player2", tkTime.UserToken);
-                        using (SqlCommand selectPrevTimeLimit = new SqlCommand("Select TimeLimit from Games where Player2 = null"))
+                        using (SqlCommand selectPrevTimeLimit = new SqlCommand("Select TimeLimit from Games where Player2 = null", conn, trans))
                         { // CHECK the command above; IT IS PROBABLY NOT CORRECT
                             using (SqlDataReader reader = selectPrevTimeLimit.ExecuteReader())
                             {
