@@ -595,6 +595,7 @@ namespace Boggle
                             {
                                 tempList.Add((string)reader["Word"]);
                             }
+                            reader.Close();
                         }
 
                         if (tempList.Contains(targetWord))
