@@ -209,7 +209,7 @@ namespace Boggle
                     {
                         int? newTLimit;
                         command.Parameters.AddWithValue("@Player2", tkTime.UserToken);
-                        using (SqlCommand selectPrevTimeLimit = new SqlCommand("Select TimeLimit from Games where Player2 = null"))
+                        using (SqlCommand selectPrevTimeLimit = new SqlCommand("Select TimeLimit from Games where Player2 = null", conn, trans))
                         { // CHECK the command above; IT IS PROBABLY NOT CORRECT
                             using (SqlDataReader reader = selectPrevTimeLimit.ExecuteReader())
                             {
