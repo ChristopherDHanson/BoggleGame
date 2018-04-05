@@ -154,6 +154,7 @@ namespace Boggle
                 conn.Open();
                 using (SqlTransaction trans = conn.BeginTransaction())
                 {
+                    int gameIDTemp = 0;
                     // Does user exist? Also check time limit
                     using (SqlCommand command = new SqlCommand("select UserToken from Users where UserToken = @UserToken", conn, trans))
                     {
@@ -171,22 +172,19 @@ namespace Boggle
                         }
                     }
                     // Is the user already pending?
-                    using (SqlCommand command = new SqlCommand("select Player1 from Games where Player2 is NULL", conn, trans))
-
+                    using (SqlCommand command = new SqlCommand("select Player1, GameID from Games where Player2 is NULL", conn, trans))
                     {
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
-                            if (reader.HasRows && reader.Read()) // This user is already pending
+                            if (reader.HasRows && reader.Read()) // There is a pending game
                             {
-                                while (reader.Read())
+                                gameIDTemp = (int)reader.GetValue(1);
+                                if (((string)reader[0]).Equals(tkTime.UserToken)) // This user is already pending
                                 {
-                                    if (reader.GetString(0).Equals(tkTime.UserToken))
-                                    {
-                                        SetStatus(Conflict);
-                                        reader.Close();
-                                        trans.Commit();
-                                        return null;
-                                    }
+                                    SetStatus(Conflict);
+                                    reader.Close();
+                                    trans.Commit();
+                                    return null;
                                 }
                             }
                             else if (!reader.HasRows) // No pending game
@@ -209,15 +207,15 @@ namespace Boggle
                             }
                         }
                     }
-                    // Second player found, match begins
+                    // Else second player found, match begins
                     using (SqlCommand command = 
                         new SqlCommand("update Games " +
                             "set Player2 = @Player2, TimeLimit = @TimeLimit, StartTime = @StartTime " +
-                            "where Player2 is null", conn, trans))
+                            "where Player2 is NULL", conn, trans))
                     {
                         int? newTLimit;
                         command.Parameters.AddWithValue("@Player2", tkTime.UserToken);
-                        using (SqlCommand selectPrevTimeLimit = new SqlCommand("Select TimeLimit from Games where Player2 = null", conn, trans))
+                        using (SqlCommand selectPrevTimeLimit = new SqlCommand("select TimeLimit from Games where Player2 is null", conn, trans))
                         { // CHECK the command above; IT IS PROBABLY NOT CORRECT
                             using (SqlDataReader reader = selectPrevTimeLimit.ExecuteReader())
                             {
@@ -227,10 +225,11 @@ namespace Boggle
                             }
                         }
                         command.Parameters.AddWithValue("@TimeLimit", newTLimit);
-                        command.Parameters.AddWithValue("@StartTime", Environment.TickCount);
+                        command.Parameters.AddWithValue("@StartTime", DateTime.Now);
+                        command.ExecuteNonQuery();
 
                         GameIDOnly gameIDReturn = new GameIDOnly();
-                        gameIDReturn.GameID = command.ExecuteScalar().ToString();
+                        gameIDReturn.GameID = gameIDTemp.ToString();
                         SetStatus(Created);
                         gameIsPending = false;
 
@@ -252,7 +251,7 @@ namespace Boggle
                 conn.Open();
                 using (SqlTransaction trans = conn.BeginTransaction())
                 {
-                    using (SqlCommand deleteCmd = new SqlCommand("delete from Games where Player1 = @Player1 and Player2 = null", conn, trans))
+                    using (SqlCommand deleteCmd = new SqlCommand("delete from Games where Player1 = @Player1 and Player2 is null", conn, trans))
                     {
                         deleteCmd.Parameters.AddWithValue("@Player1", userTkn.UserToken);
                         if (deleteCmd.ExecuteNonQuery() == 0)
@@ -267,24 +266,6 @@ namespace Boggle
                     }
                 }
             }
-
-            //lock (sync)
-            //{
-            //    //must be a user that is pending finding a game.
-            //    if (!users.ContainsKey(userTkn.UserToken) ||
-            //        !userTkn.UserToken.Equals(games[pendingGameID].Player1Token))
-            //    {
-            //        SetStatus(Forbidden);
-            //    }
-            //    else if (gameIsPending && userTkn.UserToken.Equals(games[pendingGameID].Player1Token))
-            //    {
-            //        // Remove pending game
-            //        games.Remove(pendingGameID);
-            //        pendingGameID = null;
-            //        gameIsPending = false;
-            //        SetStatus(OK);
-            //    }
-            //}
         }
 
         /// <summary>
