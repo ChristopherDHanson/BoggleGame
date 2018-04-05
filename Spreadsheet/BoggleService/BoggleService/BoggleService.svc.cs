@@ -176,7 +176,7 @@ namespace Boggle
                     {
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
-                            if (reader.HasRows && reader.Read() && reader.GetString(0).Equals(tkTime.UserToken)) // This user is already pending
+                            if (reader.HasRows && reader.Read())// && reader.GetString(0).Equals(tkTime.UserToken)) // This user is already pending
                             {
                                 SetStatus(Conflict);
                                 reader.Close();
@@ -185,8 +185,8 @@ namespace Boggle
                             }
                             else if (!reader.HasRows) // No pending game
                             {
-                                using (SqlCommand insertCmd =
-                                    new SqlCommand("insert into Games (Player1, Board, TimeLimit) output inserted.GameID values(@Player1, @Board, @TimeLimit)", conn, trans))
+                                using (SqlCommand insertCmd = new SqlCommand("insert into Games (Player1, Board, TimeLimit) " +
+                                    "output inserted.GameID values(@Player1, @Board, @TimeLimit)", conn, trans))
                                 {
                                     insertCmd.Parameters.AddWithValue("@Player1", tkTime.UserToken);
                                     BoggleBoard tempBBoard = new BoggleBoard();
@@ -297,8 +297,8 @@ namespace Boggle
                 conn.Open();
                 using (SqlTransaction trans = conn.BeginTransaction())
                 {
-                    using (SqlCommand selectGamesCmd = 
-                        new SqlCommand("select Player2, Board from Games where (Player1 = @UserToken or Player2 = @UserToken) and GameID = @GameID", conn, trans))
+                    using (SqlCommand selectGamesCmd = new SqlCommand("select Player2, Board from Games " +
+                        "where (Player1 = @UserToken or Player2 = @UserToken) and GameID = @GameID", conn, trans))
                     {
                         selectGamesCmd.Parameters.AddWithValue("@UserToken", wordToPlay.UserToken);
                         selectGamesCmd.Parameters.AddWithValue("@GameID", gameID);
@@ -322,8 +322,8 @@ namespace Boggle
                             else // word will be successfully played
                             {
                                 string boardStr = (string)reader.GetValue(1);
-                                using (SqlCommand command =
-                                    new SqlCommand("insert into Words (Word, GameID, Player, Score) values(@Word, @GameID, @Player, @Score)", conn, trans))
+                                using (SqlCommand command = new SqlCommand("insert into Words (Word, GameID, Player, Score) " +
+                                    "values(@Word, @GameID, @Player, @Score)", conn, trans))
                                 {
                                     //trim and save word with token
                                     string theWord = wordToPlay.Word.Trim().ToUpper();
@@ -401,7 +401,8 @@ namespace Boggle
                     }
 
                     int startTime;
-                    using (SqlCommand command = new SqlCommand("select Player1, Player2, Board, TimeLimit, StartTime from Games where GameID = @GameID", conn, trans))
+                    using (SqlCommand command = new SqlCommand("select Player1, Player2, Board, TimeLimit, StartTime " +
+                        "from Games where GameID = @GameID", conn, trans))
                     {
                         command.Parameters.AddWithValue("@GameID", GameID);
                         GameStatus toReturn = new GameStatus();
@@ -413,12 +414,14 @@ namespace Boggle
                             toReturn.TimeLimit = (int) reader["TimeLimit"];
 
                             using (SqlCommand playerStatus =
-                                new SqlCommand("select Word, GameID, Player, Score from Words, GameID where Words.GameID = @GameID and Player where Words.Player = @Player", conn, trans))
+                                new SqlCommand("select Word, GameID, Player, Score from Words, GameID " +
+                                "where Words.GameID = @GameID and Player where Words.Player = @Player", conn, trans))
                             {
                                 //this block extracts nicknames from games user tokens.
                                 String p1name = (string) reader["Player1"];
                                 String p2name = (string) reader["Player2"];
-                                using (SqlCommand player1Nickname = new SqlCommand("select Nickname from Users, Nickname where Users.UserToken = @UserToken", conn, trans))
+                                using (SqlCommand player1Nickname = new SqlCommand("select Nickname from Users, Nickname " +
+                                    "where Users.UserToken = @UserToken", conn, trans))
                                 {
                                     player1Nickname.Parameters.AddWithValue("@UserToken", p1name);
                                     using (SqlDataReader nameReader = player1Nickname.ExecuteReader())
@@ -427,7 +430,8 @@ namespace Boggle
                                     }
                                 }
 
-                                using (SqlCommand player2Nickname = new SqlCommand("select Nickname from Users, Nickname where Users.UserToken = @UserToken", conn, trans))
+                                using (SqlCommand player2Nickname = new SqlCommand("select Nickname from Users, Nickname " +
+                                    "where Users.UserToken = @UserToken", conn, trans))
                                 {
                                     player2Nickname.Parameters.AddWithValue("@UserToken", p2name);
                                     using (SqlDataReader nameReader = player2Nickname.ExecuteReader())
