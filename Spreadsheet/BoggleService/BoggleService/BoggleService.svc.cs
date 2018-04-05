@@ -211,7 +211,9 @@ namespace Boggle
                     }
                     // Second player found, match begins
                     using (SqlCommand command = 
-                        new SqlCommand("insert into Games (Player2, TimeLimit, StartTime) values(@Player2, @TimeLimit, @StartTime)", conn, trans))
+                        new SqlCommand("update Games " +
+                            "set Player2 = @Player2, TimeLimit = @TimeLimit, StartTime = @StartTime " +
+                            "where Player2 is null", conn, trans))
                     {
                         int? newTLimit;
                         command.Parameters.AddWithValue("@Player2", tkTime.UserToken);
