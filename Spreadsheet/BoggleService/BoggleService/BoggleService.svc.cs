@@ -254,6 +254,7 @@ namespace Boggle
                     using (SqlCommand deleteCmd = new SqlCommand("delete from Games where Player1 = @Player1 and Player2 is null", conn, trans))
                     {
                         deleteCmd.Parameters.AddWithValue("@Player1", userTkn.UserToken);
+
                         if (deleteCmd.ExecuteNonQuery() == 0)
                         {
                             SetStatus(Forbidden);
@@ -286,7 +287,7 @@ namespace Boggle
                 conn.Open();
                 using (SqlTransaction trans = conn.BeginTransaction())
                 {
-                    using (SqlCommand selectGamesCmd = new SqlCommand("select Player2, Board from Games " +
+                    using (SqlCommand selectGamesCmd = new SqlCommand("select Player2, Board, TimeLimit, StartTime from Games " +
                         "where (Player1 = @UserToken or Player2 = @UserToken) and GameID = @GameID", conn, trans))
                     {
                         selectGamesCmd.Parameters.AddWithValue("@UserToken", wordToPlay.UserToken);
@@ -301,15 +302,18 @@ namespace Boggle
                                 return null;
                             }
                             // if game isn't active, update server with a conflict status
-                            else if (reader.Read() && reader.GetValue(0) == null)
+                            if (reader.Read())
                             {
-                                SetStatus(Conflict);
-                                reader.Close();
-                                trans.Commit();
-                                return null;
+                                DateTime tempStartTime = reader.GetDateTime(3);
+                                if (reader.GetValue(0).ToString().Equals("") || DateTime.Now.Subtract(tempStartTime).TotalSeconds > reader.GetInt32(2))
+                                {
+                                    SetStatus(Conflict);
+                                    reader.Close();
+                                    trans.Commit();
+                                    return null;
+                                }
                             }
-                            else // word will be successfully played
-                            {
+                            // word will be successfully played
                                 string boardStr = (string)reader.GetValue(1);
                                 using (SqlCommand command = new SqlCommand("insert into Words (Word, GameID, Player, Score) " +
                                     "values(@Word, @GameID, @Player, @Score)", conn, trans))
@@ -355,7 +359,6 @@ namespace Boggle
                                     trans.Commit();
                                     return scoreToReturn;
                                 }
-                            }
                         }
                     }
                 }
@@ -398,34 +401,44 @@ namespace Boggle
 
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
+                            reader.Read();
                             toReturn.Board = (string) reader["Board"];
-                            toReturn.TimeLeft = (int) reader["TimeLeft"];
+//                            toReturn.TimeLeft = (int) reader["TimeLeft"];
                             toReturn.TimeLimit = (int) reader["TimeLimit"];
 
                             using (SqlCommand playerStatus =
-                                new SqlCommand("select Word, GameID, Player, Score from Words, GameID " +
-                                "where Words.GameID = @GameID and Player where Words.Player = @Player", conn, trans))
+                                new SqlCommand("select Word, GameID, Player, Score from Words " +
+                                "where Words.GameID = @GameID and Words.Player = @Player", conn, trans))
                             {
                                 //this block extracts nicknames from games user tokens.
-                                String p1name = (string) reader["Player1"];
-                                String p2name = (string) reader["Player2"];
-                                using (SqlCommand player1Nickname = new SqlCommand("select Nickname from Users, Nickname " +
+                                String p1name = reader["Player1"].ToString();
+                                String p2name = reader["Player2"].ToString();
+                                if (p2name.Equals(""))
+                                {
+                                    p2name = null;
+                                }
+                                using (SqlCommand player1Nickname = new SqlCommand("select Nickname from Users " +
                                     "where Users.UserToken = @UserToken", conn, trans))
                                 {
                                     player1Nickname.Parameters.AddWithValue("@UserToken", p1name);
                                     using (SqlDataReader nameReader = player1Nickname.ExecuteReader())
                                     {
+                                        nameReader.Read();
                                         p1name = (string) nameReader["Nickname"];
                                     }
                                 }
 
-                                using (SqlCommand player2Nickname = new SqlCommand("select Nickname from Users, Nickname " +
-                                    "where Users.UserToken = @UserToken", conn, trans))
+                                if (p2name != null)
                                 {
-                                    player2Nickname.Parameters.AddWithValue("@UserToken", p2name);
-                                    using (SqlDataReader nameReader = player2Nickname.ExecuteReader())
+                                    using (SqlCommand player2Nickname = new SqlCommand("select Nickname from Users " +
+                                        "where Users.UserToken = @UserToken", conn, trans))
                                     {
-                                        p2name = (string) nameReader["Nickname"];
+                                        player2Nickname.Parameters.AddWithValue("@UserToken", p2name);
+                                        using (SqlDataReader nameReader = player2Nickname.ExecuteReader())
+                                        {
+                                            nameReader.Read();
+                                            p2name = (string)nameReader["Nickname"];
+                                        }
                                     }
                                 }
 
@@ -447,7 +460,6 @@ namespace Boggle
                                     }
                                 }
 
-                                playerStatus.Parameters.AddWithValue("@GameID", GameID);
                                 playerStatus.Parameters.AddWithValue("@Player", (string) reader["Player2"]);
                                 using (SqlDataReader wordAndScoreP2 = playerStatus.ExecuteReader())
                                 {
@@ -560,6 +572,7 @@ namespace Boggle
                         command.Parameters.AddWithValue("@Word", targetWord);
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
+                            reader.Read();
                             if (!reader.HasRows)
                             {
                                 SetStatus(Forbidden);
@@ -573,6 +586,7 @@ namespace Boggle
                     String query = "select GameID, Word from Words, userToken where Words.Player = @userToken and GameID where Words.GameID = @GameID";
                     using (SqlCommand cmd = new SqlCommand(query, conn, trans))
                     {
+
                         cmd.Parameters.AddWithValue("@userToken", userToken);
                         cmd.Parameters.AddWithValue("@GameID", gameID);
 
