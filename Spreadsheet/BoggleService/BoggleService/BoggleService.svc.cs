@@ -536,7 +536,10 @@ namespace Boggle
                                         if (!(timeRemaining <= 0))
                                             toReturn.GameState = "active";
                                         else
+                                        {
                                             toReturn.GameState = "completed";
+                                            toReturn.TimeLeft = 0;
+                                        }
                                     }
                                 }
                             }
