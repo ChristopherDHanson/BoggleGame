@@ -399,10 +399,11 @@ namespace Boggle
                 {
                     using (SqlCommand cmd = new SqlCommand("select GameID from Games where GameID = @GameID", conn, trans))
                     {
+                        
+
                         cmd.Parameters.AddWithValue("@GameID", GameID);
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
-                            reader.Read();
                             if (!reader.HasRows)
                             {
                                 SetStatus(Forbidden);
@@ -414,6 +415,8 @@ namespace Boggle
                     }
 
                     int startTime;
+                    string p2name;
+
                     using (SqlCommand command = new SqlCommand("select Player1, Player2, Board, TimeLimit, StartTime " +
                         "from Games where GameID = @GameID", conn, trans))
                     {
@@ -428,30 +431,35 @@ namespace Boggle
                             toReturn.TimeLimit = (int) reader["TimeLimit"];
 
                             using (SqlCommand playerStatus =
-                                new SqlCommand("select Word, GameID, Player, Score from Words, GameID " +
-                                "where Words.GameID = @GameID and Player where Words.Player = @Player", conn, trans))
+                                new SqlCommand("select Word, GameID, Player, Score from Words " +
+                                "where Words.GameID = @GameID and Words.Player = @Player", conn, trans))
                             {
                                 //this block extracts nicknames from games user tokens.
-                                String p1name = (string) reader["Player1"];
-                                String p2name = (string) reader["Player2"];
-                                using (SqlCommand player1Nickname = new SqlCommand("select Nickname from Users, Nickname " +
+                                String p1name = (reader["Player1"]).ToString();
+                                p2name = (reader["Player2"]).ToString();
+
+                                if (p2name.Equals(""))
+                                    p2name = null;
+
+                                using (SqlCommand player1Nickname = new SqlCommand("select Nickname, UserToken from Users " +
                                     "where Users.UserToken = @UserToken", conn, trans))
                                 {
                                     player1Nickname.Parameters.AddWithValue("@UserToken", p1name);
                                     using (SqlDataReader nameReader = player1Nickname.ExecuteReader())
                                     {
-                                        reader.Read();
+                                        nameReader.Read();
                                         p1name = (string) nameReader["Nickname"];
                                     }
                                 }
 
-                                using (SqlCommand player2Nickname = new SqlCommand("select Nickname from Users, Nickname " +
+                                if (p2name != null)
+                                using (SqlCommand player2Nickname = new SqlCommand("select Nickname, UserToken from Users " +
                                     "where Users.UserToken = @UserToken", conn, trans))
                                 {
                                     player2Nickname.Parameters.AddWithValue("@UserToken", p2name);
                                     using (SqlDataReader nameReader = player2Nickname.ExecuteReader())
                                     {
-                                        reader.Read();
+                                        nameReader.Read();
                                         p2name = (string) nameReader["Nickname"];
                                     }
                                 }
@@ -464,7 +472,6 @@ namespace Boggle
                                 playerStatus.Parameters.AddWithValue("@Player", (string) reader["Player1"]);
                                 using (SqlDataReader wordAndScoreP1 = playerStatus.ExecuteReader())
                                 {
-                                    reader.Read();
                                     while (wordAndScoreP1.Read())
                                     {
                                         WordScore tempWS = new WordScore();
@@ -475,18 +482,26 @@ namespace Boggle
                                     }
                                 }
 
-                                playerStatus.Parameters.AddWithValue("@GameID", GameID);
-                                playerStatus.Parameters.AddWithValue("@Player", (string) reader["Player2"]);
-                                using (SqlDataReader wordAndScoreP2 = playerStatus.ExecuteReader())
+                                if (p2name != null)
                                 {
-                                    reader.Read();
-                                    while (wordAndScoreP2.Read())
+                                    using (SqlCommand playerStatus2 =
+                                        new SqlCommand("select Word, GameID, Player, Score from Words " +
+                                                       "where Words.GameID = @GameID and Words.Player = @Player", conn,
+                                            trans))
                                     {
-                                        WordScore tempWS = new WordScore();
-                                        tempWS.Word = (string) wordAndScoreP2["Word"];
-                                        tempWS.Score = (int) wordAndScoreP2["Score"];
-                                        p2WordList.Add(tempWS);
-                                        p2Score += (int) wordAndScoreP2["Score"];
+                                        playerStatus2.Parameters.AddWithValue("@GameID", GameID);
+                                        playerStatus2.Parameters.AddWithValue("@Player", p2name);
+                                        using (SqlDataReader wordAndScoreP2 = playerStatus2.ExecuteReader())
+                                        {
+                                            while (wordAndScoreP2.Read())
+                                            {
+                                                WordScore tempWS = new WordScore();
+                                                tempWS.Word = (string) wordAndScoreP2["Word"];
+                                                tempWS.Score = (int) wordAndScoreP2["Score"];
+                                                p2WordList.Add(tempWS);
+                                                p2Score += (int) wordAndScoreP2["Score"];
+                                            }
+                                        }
                                     }
                                 }
 
@@ -503,12 +518,20 @@ namespace Boggle
                                     Score = p2Score,
                                     WordsPlayed = p2WordList
                                 }); //create new PlayerStatus obj from this token to info in Users table DB
-
                             }
 
-                            DateTime temp = (DateTime)reader["StartTime"];
-                            startTime = temp.Millisecond;
+                            if (p2name != null)
+                            {
+                                DateTime temp = (DateTime) reader["StartTime"];
+                                startTime = temp.Millisecond;
+                            }
+                            else
+                            {
+                                startTime = DateTime.Now.Millisecond;
+                            }
                         }
+
+
 
                         //Return logic goes here
                                 //returns needed status update if pending, active, or completed and if isBrief == yes
@@ -552,12 +575,6 @@ namespace Boggle
                                         toReturn.Player2.Score = toReturn.Player2.Score;
                                         toReturn.TimeLeft = toReturn.TimeLeft;
                                         toReturn.TimeLimit = null;
-                                    }
-                                    //else return non brief responses
-                                    else if (toReturn.GameState.Equals("completed") &&
-                                                (isBrief == null || !isBrief.Equals("yes"))) // Completed full
-                                    {
-                                        toReturn = games[GameID].GameStatus;
                                     }
                                 }
                         
