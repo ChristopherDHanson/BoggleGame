@@ -12,7 +12,7 @@ using static System.Net.HttpStatusCode;
 /// This namespace acts as the logic for a server that users can connect to, in order to play other users in a Bogglegame. It implements
 /// IBoggleService, and uses BoggleBoard for the board layout.
 /// 
-/// Authors: Bryce Hansen, Chris Hanson.
+/// Authors: Bryce Hansen, Chris Hanson. 4/5/18
 /// </summary>
 namespace Boggle
 {
@@ -257,6 +257,7 @@ namespace Boggle
                     using (SqlCommand selectGamesCmd = new SqlCommand("select Player2, Board, TimeLimit, StartTime from Games " +
                         "where (Player1 = @UserToken or Player2 = @UserToken) and GameID = @GameID", conn, trans))
                     {
+                        // Check here if word is valid
                         selectGamesCmd.Parameters.AddWithValue("@UserToken", wordToPlay.UserToken);
                         selectGamesCmd.Parameters.AddWithValue("@GameID", gameID);
                         using (SqlDataReader reader = selectGamesCmd.ExecuteReader())
@@ -417,6 +418,7 @@ namespace Boggle
                                     }
                                 }
 
+                                // Extract word list for each player from current games played words. Add scores
                                 int p1Score = 0;
                                 int p2Score = 0;
                                 IList<WordScore> p1WordList = new List<WordScore>();
