@@ -154,7 +154,7 @@ namespace Boggle
                 conn.Open();
                 using (SqlTransaction trans = conn.BeginTransaction())
                 {
-                    int gameTemp = 0;
+                    int gameIDTemp = 0;
                     // Does user exist? Also check time limit
                     using (SqlCommand command = new SqlCommand("select UserToken from Users where UserToken = @UserToken", conn, trans))
                     {
@@ -173,23 +173,19 @@ namespace Boggle
                     }
                     // Is the user already pending?
                     using (SqlCommand command = new SqlCommand("select Player1, GameID from Games where Player2 is NULL", conn, trans))
-
                     {
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
-
-                            if (reader.HasRows && reader.Read()) // there is a pending game
+                            if (reader.HasRows && reader.Read()) // There is a pending game
                             {
-                                string tempToken = (string)reader["Player1"];
-                                gameTemp = (int) reader["GameID"];
-
-                                    if (tempToken.Equals(tkTime.UserToken))  // This user is already pending
-                                    {
-                                        SetStatus(Conflict);
-                                        reader.Close();
-                                        trans.Commit();
-                                        return null;
-                                    }
+                                gameIDTemp = (int)reader.GetValue(1);
+                                if (((string)reader[0]).Equals(tkTime.UserToken)) // This user is already pending
+                                {
+                                    SetStatus(Conflict);
+                                    reader.Close();
+                                    trans.Commit();
+                                    return null;
+                                }
                             }
                             else if (!reader.HasRows) // No pending game
                             {
@@ -211,15 +207,15 @@ namespace Boggle
                             }
                         }
                     }
-                    // Second player found, match begins
+                    // Else second player found, match begins
                     using (SqlCommand command = 
                         new SqlCommand("update Games " +
                             "set Player2 = @Player2, TimeLimit = @TimeLimit, StartTime = @StartTime " +
-                            "where Player2 is null", conn, trans))
+                            "where Player2 is NULL", conn, trans))
                     {
                         int? newTLimit;
                         command.Parameters.AddWithValue("@Player2", tkTime.UserToken);
-                        using (SqlCommand selectPrevTimeLimit = new SqlCommand("Select TimeLimit from Games where Player2 is NULL", conn, trans))
+                        using (SqlCommand selectPrevTimeLimit = new SqlCommand("select TimeLimit from Games where Player2 is null", conn, trans))
                         { // CHECK the command above; IT IS PROBABLY NOT CORRECT
                             using (SqlDataReader reader = selectPrevTimeLimit.ExecuteReader())
                             {
@@ -233,7 +229,7 @@ namespace Boggle
                         command.ExecuteNonQuery();
 
                         GameIDOnly gameIDReturn = new GameIDOnly();
-                        gameIDReturn.GameID = gameTemp.ToString();
+                        gameIDReturn.GameID = gameIDTemp.ToString();
                         SetStatus(Created);
                         gameIsPending = false;
 
@@ -255,7 +251,7 @@ namespace Boggle
                 conn.Open();
                 using (SqlTransaction trans = conn.BeginTransaction())
                 {
-                    using (SqlCommand deleteCmd = new SqlCommand("delete from Games where Player1 = @Player1 and Player2 is NULL", conn, trans))
+                    using (SqlCommand deleteCmd = new SqlCommand("delete from Games where Player1 = @Player1 and Player2 is null", conn, trans))
                     {
                         deleteCmd.Parameters.AddWithValue("@Player1", userTkn.UserToken);
 
@@ -271,24 +267,6 @@ namespace Boggle
                     }
                 }
             }
-
-            //lock (sync)
-            //{
-            //    //must be a user that is pending finding a game.
-            //    if (!users.ContainsKey(userTkn.UserToken) ||
-            //        !userTkn.UserToken.Equals(games[pendingGameID].Player1Token))
-            //    {
-            //        SetStatus(Forbidden);
-            //    }
-            //    else if (gameIsPending && userTkn.UserToken.Equals(games[pendingGameID].Player1Token))
-            //    {
-            //        // Remove pending game
-            //        games.Remove(pendingGameID);
-            //        pendingGameID = null;
-            //        gameIsPending = false;
-            //        SetStatus(OK);
-            //    }
-            //}
         }
 
         /// <summary>
@@ -309,7 +287,7 @@ namespace Boggle
                 conn.Open();
                 using (SqlTransaction trans = conn.BeginTransaction())
                 {
-                    using (SqlCommand selectGamesCmd = new SqlCommand("select Player2, Board from Games " +
+                    using (SqlCommand selectGamesCmd = new SqlCommand("select Player2, Board, TimeLimit, StartTime from Games " +
                         "where (Player1 = @UserToken or Player2 = @UserToken) and GameID = @GameID", conn, trans))
                     {
                         selectGamesCmd.Parameters.AddWithValue("@UserToken", wordToPlay.UserToken);
@@ -324,15 +302,18 @@ namespace Boggle
                                 return null;
                             }
                             // if game isn't active, update server with a conflict status
-                            else if (reader.Read() && reader.GetValue(0) == null)
+                            if (reader.Read())
                             {
-                                SetStatus(Conflict);
-                                reader.Close();
-                                trans.Commit();
-                                return null;
+                                DateTime tempStartTime = reader.GetDateTime(3);
+                                if (reader.GetValue(0).ToString().Equals("") || DateTime.Now.Subtract(tempStartTime).TotalSeconds > reader.GetInt32(2))
+                                {
+                                    SetStatus(Conflict);
+                                    reader.Close();
+                                    trans.Commit();
+                                    return null;
+                                }
                             }
-                            else // word will be successfully played
-                            {
+                            // word will be successfully played
                                 string boardStr = (string)reader.GetValue(1);
                                 using (SqlCommand command = new SqlCommand("insert into Words (Word, GameID, Player, Score) " +
                                     "values(@Word, @GameID, @Player, @Score)", conn, trans))
@@ -378,7 +359,6 @@ namespace Boggle
                                     trans.Commit();
                                     return scoreToReturn;
                                 }
-                            }
                         }
                     }
                 }
@@ -408,7 +388,7 @@ namespace Boggle
                             {
                                 SetStatus(Forbidden);
                                 reader.Close();
-//                                trans.Commit();
+                                trans.Commit();
                                 return null;
                             }
                         }
@@ -627,7 +607,7 @@ namespace Boggle
                         IList<string> tempList = new List<string>();
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
-                            reader.Read();
+
                             while (reader.Read())
                             {
                                 tempList.Add((string)reader["Word"]);
