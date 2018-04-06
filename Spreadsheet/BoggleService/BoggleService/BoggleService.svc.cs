@@ -388,7 +388,7 @@ namespace Boggle
                 conn.Open();
                 using (SqlTransaction trans = conn.BeginTransaction())
                 {
-                    using (SqlCommand cmd = new SqlCommand("select GameID from Games where GameID = @GameID", conn, trans))
+                    using (SqlCommand cmd = new SqlCommand("select GameID from Games where Games.GameID = @GameID", conn, trans))
                     {
                         cmd.Parameters.AddWithValue("@GameID", GameID);
                         using (SqlDataReader reader = cmd.ExecuteReader())
@@ -403,11 +403,10 @@ namespace Boggle
                         }
                     }
 
-                    int startTime;
                     string p2name;
 
                     using (SqlCommand command = new SqlCommand("select Player1, Player2, Board, TimeLimit, StartTime " +
-                        "from Games where GameID = @GameID", conn, trans))
+                        "from Games where Games.GameID = @GameID", conn, trans))
                     {
                         command.Parameters.AddWithValue("@GameID", GameID);
                         GameStatus toReturn = new GameStatus();
@@ -479,7 +478,7 @@ namespace Boggle
                                             trans))
                                     {
                                         playerStatus2.Parameters.AddWithValue("@GameID", GameID);
-                                        playerStatus2.Parameters.AddWithValue("@Player", p2name);
+                                        playerStatus2.Parameters.AddWithValue("@Player", (string)reader["Player2"]);
                                         using (SqlDataReader wordAndScoreP2 = playerStatus2.ExecuteReader())
                                         {
                                             while (wordAndScoreP2.Read())
@@ -508,16 +507,6 @@ namespace Boggle
                                     WordsPlayed = p2WordList
                                 }); //create new PlayerStatus obj from this token to info in Users table DB
                             }
-
-                            if (p2name != null)
-                            {
-                                DateTime temp = (DateTime) reader["StartTime"];
-                                startTime = temp.Millisecond;
-                            }
-                            else
-                            {
-                                startTime = DateTime.Now.Millisecond;
-                            }
                         }
 
 
@@ -535,44 +524,58 @@ namespace Boggle
                                 }
                                 else
                                 {
-                                    //calculate time remaining to return
-                                    int timeNow = DateTime.Now.Millisecond;
-                                    int? timeRemaining = toReturn.TimeLimit -
-                                                            ((timeNow - startTime) / 1000);
-                        
-                                    //if timeremaining is 0 return completed
-                                    if (timeRemaining <= 0)
+                                    using (SqlCommand cmd = new SqlCommand(
+                                        "select StartTime from Games where Games.GameID = @GameID", conn, trans))
                                     {
-                                        toReturn.TimeLeft = 0;
-                                        toReturn.GameState = "completed";
-                                    }
-                                    else
-                                    {
-                                        toReturn.TimeLeft = timeRemaining;
-                                    }
-                        
-                                    //active or completed and brief response, return necessary format and update datamodel
-                                    if (toReturn.Player2.Nickname != null && (isBrief != null && isBrief.Equals("yes"))) // Active or completed, brief response
-                                    {
-                                        if (!(timeRemaining <= 0))
-                                            toReturn.GameState = "active";
+                                        cmd.Parameters.AddWithValue("@GameID", GameID);
+                                        using (SqlDataReader reader = cmd.ExecuteReader())
+                                        {
+                                            reader.Read();
+                                            //calculate time remaining to return
+                                            DateTime timeNow = DateTime.Now;
+                                            int? timeRemaining = (int)((double)toReturn.TimeLimit -
+                                                                 (timeNow.Subtract((DateTime)reader["StartTime"]).TotalSeconds));
 
-                                        toReturn.Board = null;
-                                        toReturn.Player1 = new PlayerStatus();
-                                        toReturn.Player1.Score = toReturn.Player1.Score;
-                                        toReturn.Player2 = new PlayerStatus();
-                                        toReturn.Player2.Score = toReturn.Player2.Score;
-                                        toReturn.TimeLeft = toReturn.TimeLeft;
-                                        toReturn.TimeLimit = null;
+
+                                            //if timeremaining is 0 return completed
+                                            if (timeRemaining <= 0)
+                                            {
+                                                toReturn.TimeLeft = 0;
+                                                toReturn.GameState = "completed";
+                                            }
+                                            else
+                                            {
+                                                toReturn.TimeLeft = timeRemaining;
+                                            }
+
+                                            //active or completed and brief response, return necessary format and update datamodel
+                                            if (toReturn.Player2.Nickname != null &&
+                                                (isBrief != null && isBrief.Equals("yes"))
+                                            ) // Active or completed, brief response
+                                            {
+                                                if (!(timeRemaining <= 0))
+                                                    toReturn.GameState = "active";
+
+                                                toReturn.Board = null;
+                                                toReturn.Player1 = new PlayerStatus();
+                                                toReturn.Player1.Score = toReturn.Player1.Score;
+                                                toReturn.Player2 = new PlayerStatus();
+                                                toReturn.Player2.Score = toReturn.Player2.Score;
+                                                toReturn.TimeLeft = toReturn.TimeLeft;
+                                                toReturn.TimeLimit = null;
+                                            }
+                                            else if (toReturn.Player2.Nickname != null &&
+                                                     (isBrief != null && isBrief.Equals("no"))
+                                            ) // Active or completed, brief response
+                                            {
+                                                if (!(timeRemaining <= 0))
+                                                    toReturn.GameState = "active";
+                                                else
+                                                    toReturn.GameState = "completed";
+                                            }
+                                        }
                                     }
-                                    else if (toReturn.Player2.Nickname != null && (isBrief != null && isBrief.Equals("no"))) // Active or completed, brief response
-                                    {
-                                        if (!(timeRemaining <= 0))
-                                            toReturn.GameState = "active";
-                                        else
-                                            toReturn.GameState = "completed";    
-                                    }
-                        }
+                                }
                         
                                 //update server
                                 trans.Commit();
