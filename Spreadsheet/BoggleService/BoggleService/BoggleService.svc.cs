@@ -608,7 +608,7 @@ namespace Boggle
                         }
                     }
 
-                    String query = "select GameID, Word from Words where Words.Player = @userToken and GameID where Words.GameID = @GameID";
+                    String query = "select GameID, Word from Words where Words.Player = @userToken and Words.GameID = @GameID";
                     using (SqlCommand cmd = new SqlCommand(query, conn, trans))
                     {
                         cmd.Parameters.AddWithValue("@userToken", userToken);
