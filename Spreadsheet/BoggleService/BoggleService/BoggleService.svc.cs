@@ -379,8 +379,6 @@ namespace Boggle
                 {
                     using (SqlCommand cmd = new SqlCommand("select GameID from Games where GameID = @GameID", conn, trans))
                     {
-                        
-
                         cmd.Parameters.AddWithValue("@GameID", GameID);
                         using (SqlDataReader reader = cmd.ExecuteReader())
                         {
@@ -388,7 +386,7 @@ namespace Boggle
                             {
                                 SetStatus(Forbidden);
                                 reader.Close();
-                                trans.Commit();
+//                                trans.Commit();
                                 return null;
                             }
                         }
@@ -515,7 +513,7 @@ namespace Boggle
 
                         //Return logic goes here
                                 //returns needed status update if pending, active, or completed and if isBrief == yes
-                                if (toReturn.Player2 == null)
+                                if (toReturn.Player2.Nickname == null)
                                 {
                                     toReturn.GameState = "pending";
                                     toReturn.Board = null;
@@ -527,7 +525,7 @@ namespace Boggle
                                 else
                                 {
                                     //calculate time remaining to return
-                                    int timeNow = Environment.TickCount;
+                                    int timeNow = DateTime.Now.Millisecond;
                                     int? timeRemaining = toReturn.TimeLimit -
                                                             ((timeNow - startTime) / 1000);
                         
@@ -543,7 +541,7 @@ namespace Boggle
                                     }
                         
                                     //active or completed and brief response, return necessary format and update datamodel
-                                    if (toReturn.Player2 != null && (isBrief != null && isBrief.Equals("yes"))) // Active or completed, brief response
+                                    if (toReturn.Player2.Nickname != null && (isBrief != null && isBrief.Equals("yes"))) // Active or completed, brief response
                                     {
                                         if (!(timeRemaining <= 0))
                                             toReturn.GameState = "active";
@@ -556,7 +554,14 @@ namespace Boggle
                                         toReturn.TimeLeft = toReturn.TimeLeft;
                                         toReturn.TimeLimit = null;
                                     }
-                                }
+                                    else if (toReturn.Player2.Nickname != null && (isBrief != null && isBrief.Equals("no"))) // Active or completed, brief response
+                                    {
+                                        if (!(timeRemaining <= 0))
+                                            toReturn.GameState = "active";
+                                        else
+                                            toReturn.GameState = "completed";    
+                                    }
+                        }
                         
                                 //update server
                                 trans.Commit();
@@ -597,7 +602,7 @@ namespace Boggle
                         }
                     }
 
-                    String query = "select GameID, Word from Words, userToken where Words.Player = @userToken and GameID where Words.GameID = @GameID";
+                    String query = "select GameID, Word from Words where Words.Player = @userToken and GameID where Words.GameID = @GameID";
                     using (SqlCommand cmd = new SqlCommand(query, conn, trans))
                     {
 
