@@ -304,8 +304,18 @@ namespace Boggle
                             // if game isn't active, update server with a conflict status
                             if (reader.Read())
                             {
-                                DateTime tempStartTime = reader.GetDateTime(3);
-                                if (reader.GetValue(0).ToString().Equals("") || DateTime.Now.Subtract(tempStartTime).TotalSeconds > reader.GetInt32(2))
+                                if (!reader.GetValue(3).ToString().Equals(""))
+                                {
+                                    DateTime tempStartTime = reader.GetDateTime(3);
+                                    if (DateTime.Now.Subtract(tempStartTime).TotalSeconds > reader.GetInt32(2))
+                                    {
+                                        SetStatus(Conflict);
+                                        reader.Close();
+                                        trans.Commit();
+                                        return null;
+                                    }
+                                }
+                                if (reader.GetValue(0).ToString().Equals(""))
                                 {
                                     SetStatus(Conflict);
                                     reader.Close();
@@ -314,51 +324,52 @@ namespace Boggle
                                 }
                             }
                             // word will be successfully played
-                                string boardStr = (string)reader.GetValue(1);
-                                using (SqlCommand command = new SqlCommand("insert into Words (Word, GameID, Player, Score) " +
-                                    "values(@Word, @GameID, @Player, @Score)", conn, trans))
+                            string boardStr = (string)reader.GetValue(1);
+                            using (SqlCommand command = new SqlCommand("insert into Words (Word, GameID, Player, Score) " +
+                                "values(@Word, @GameID, @Player, @Score)", conn, trans))
+                            {
+                                //trim and save word with token
+                                string theWord = wordToPlay.Word.Trim().ToUpper();
+                                string theToken = wordToPlay.UserToken;
+                                ScoreOnly scoreToReturn = new ScoreOnly();
+                                int tempScore = tempScore = 0;
+                                BoggleBoard tempBoard = new BoggleBoard(boardStr);
+
+                                //update scores according to word length
+                                if (tempBoard.CanBeFormed(theWord) && dictionaryWords.Contains(theWord) &&
+                                    !HasBeenPlayed(wordToPlay.UserToken, gameID, wordToPlay.Word))
                                 {
-                                    //trim and save word with token
-                                    string theWord = wordToPlay.Word.Trim().ToUpper();
-                                    string theToken = wordToPlay.UserToken;
-                                    ScoreOnly scoreToReturn = new ScoreOnly();
-                                    int tempScore = tempScore = 0;
-                                    BoggleBoard tempBoard = new BoggleBoard(boardStr);
-
-                                    //update scores according to word length
-                                    if (tempBoard.CanBeFormed(theWord) && dictionaryWords.Contains(theWord) &&
-                                        !HasBeenPlayed(wordToPlay.UserToken, gameID, wordToPlay.Word))
-                                    {
-                                        if (theWord.Length == 3 || theWord.Length == 4)
-                                            tempScore = 1;
-                                        else if (theWord.Length == 5)
-                                            tempScore = 2;
-                                        else if (theWord.Length == 6)
-                                            tempScore = 3;
-                                        else if (theWord.Length == 7)
-                                            tempScore = 5;
-                                        else if (theWord.Length > 7)
-                                            tempScore = 11;
-                                    }
-                                    else // Invalid word played
-                                    {
-                                        if (theWord.Length > 2)
-                                        {
-                                            tempScore = -1;
-                                        }
-                                    }
-                                    //add to words played and increment point
-                                    command.Parameters.AddWithValue("@Word", wordToPlay.Word);
-                                    command.Parameters.AddWithValue("@GameID", gameID);
-                                    command.Parameters.AddWithValue("@Player", wordToPlay.UserToken);
-                                    command.Parameters.AddWithValue("@Score", tempScore);
-
-                                    SetStatus(OK);
-                                    scoreToReturn.Score = tempScore;
-                                    reader.Close();
-                                    trans.Commit();
-                                    return scoreToReturn;
+                                    if (theWord.Length == 3 || theWord.Length == 4)
+                                        tempScore = 1;
+                                    else if (theWord.Length == 5)
+                                        tempScore = 2;
+                                    else if (theWord.Length == 6)
+                                        tempScore = 3;
+                                    else if (theWord.Length == 7)
+                                        tempScore = 5;
+                                    else if (theWord.Length > 7)
+                                        tempScore = 11;
                                 }
+                                else // Invalid word played
+                                {
+                                    if (theWord.Length > 2)
+                                    {
+                                        tempScore = -1;
+                                    }
+                                }
+                                //add to words played and increment point
+                                command.Parameters.AddWithValue("@Word", wordToPlay.Word);
+                                command.Parameters.AddWithValue("@GameID", gameID);
+                                command.Parameters.AddWithValue("@Player", wordToPlay.UserToken);
+                                command.Parameters.AddWithValue("@Score", tempScore);
+                                command.ExecuteNonQuery();
+
+                                SetStatus(OK);
+                                scoreToReturn.Score = tempScore;
+                                reader.Close();
+                                trans.Commit();
+                                return scoreToReturn;
+                            }
                         }
                     }
                 }
@@ -388,7 +399,7 @@ namespace Boggle
                             {
                                 SetStatus(Forbidden);
                                 reader.Close();
-                                trans.Commit();
+                                //trans.Commit();
                                 return null;
                             }
                         }
@@ -527,7 +538,7 @@ namespace Boggle
                                 else
                                 {
                                     //calculate time remaining to return
-                                    int timeNow = Environment.TickCount;
+                                    int timeNow = DateTime.Now.Millisecond;
                                     int? timeRemaining = toReturn.TimeLimit -
                                                             ((timeNow - startTime) / 1000);
                         
@@ -597,10 +608,9 @@ namespace Boggle
                         }
                     }
 
-                    String query = "select GameID, Word from Words, userToken where Words.Player = @userToken and GameID where Words.GameID = @GameID";
+                    String query = "select GameID, Word from Words where Words.Player = @userToken and GameID where Words.GameID = @GameID";
                     using (SqlCommand cmd = new SqlCommand(query, conn, trans))
                     {
-
                         cmd.Parameters.AddWithValue("@userToken", userToken);
                         cmd.Parameters.AddWithValue("@GameID", gameID);
 
