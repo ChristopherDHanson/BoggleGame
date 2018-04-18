@@ -1,11 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2036
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoggleService", "BoggleService\BoggleService.csproj", "{27879B14-6F92-4FD5-B48E-723C9F6EE7B7}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BoggleServiceTests", "BoggleServiceTests\BoggleServiceTests.csproj", "{71936E2C-E15E-44DE-ABFF-B69805FAE163}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MyBoggleService", "MyBoggleService\MyBoggleService.csproj", "{E0D02A7D-A2E7-46F7-967B-217C1A968169}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,8 +23,15 @@ Global
 		{71936E2C-E15E-44DE-ABFF-B69805FAE163}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{71936E2C-E15E-44DE-ABFF-B69805FAE163}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{71936E2C-E15E-44DE-ABFF-B69805FAE163}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E0D02A7D-A2E7-46F7-967B-217C1A968169}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E0D02A7D-A2E7-46F7-967B-217C1A968169}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E0D02A7D-A2E7-46F7-967B-217C1A968169}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E0D02A7D-A2E7-46F7-967B-217C1A968169}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {37CDCA55-019B-4747-9BEC-7770427ADB22}
 	EndGlobalSection
 EndGlobal
