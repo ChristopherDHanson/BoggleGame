@@ -5,9 +5,11 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Runtime.Serialization.Json;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 
 namespace MyBoggleService
 {
@@ -53,7 +55,7 @@ namespace MyBoggleService
             {
                 sync.EnterWriteLock();
                 clients.Add(s);
-                s.BeginReceive(CallRequest, null);
+                s.BeginReceive(CallRequest, s);
             }
             finally
             {
@@ -63,16 +65,27 @@ namespace MyBoggleService
 
         private void CallRequest (string requestStr, object payload)
         {
+            HttpStatusCode status;
             // Parse thru the requestStr, get relevant data
             StringReader reader = new StringReader(requestStr);
-            string line = "";
+            string line = reader.ReadLine();
 
             if (line.StartsWith("GET"))
             {
-                if (line.Contains(""))
-                {
-                    GetStatus("", "", out HttpStatusCode status);
-                }
+                String[] splitLine = line.Split('/','?');
+
+                string isBrief = "";
+                
+                if (splitLine.Length > 2)
+                    isBrief = splitLine[2];
+
+                GameStatus returnStatus = GetStatus(splitLine[1], isBrief, out status);
+
+                String returnStatusString = JsonConvert.SerializeObject(returnStatus);
+                
+                returnStatusString = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
+
+                ((SS) payload).BeginSend(returnStatusString,null,null);
             }
             else if (line.StartsWith("POST"))
             {
@@ -95,7 +108,17 @@ namespace MyBoggleService
             }
         }
 
+        private string ResponseBuilder(string json, int length, HttpStatusCode status)
+        {
+            StringBuilder response = new StringBuilder();
+            response.AppendLine("HTTP//1.1 "+status);
+            response.AppendLine("Content-Length: "+length);
+            response.AppendLine("Content-Type: application/json; charset=utf-8");
+            response.AppendLine("");
+            response.AppendLine(json);
 
+            return response.ToString();
+        }
 
         //        /// <summary>
         //        /// Sends back index.html as the response body.
