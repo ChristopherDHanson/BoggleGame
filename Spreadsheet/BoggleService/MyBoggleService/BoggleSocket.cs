@@ -65,8 +65,37 @@ namespace MyBoggleService
         {
             // Parse thru the requestStr, get relevant data
             StringReader reader = new StringReader(requestStr);
-            string line;
+            string line = "";
+
+            if (line.StartsWith("GET"))
+            {
+                if (line.Contains(""))
+                {
+                    GetStatus("", "", out HttpStatusCode status);
+                }
+            }
+            else if (line.StartsWith("POST"))
+            {
+                if (line.Contains("users"))
+                {
+
+                }
+                else if (line.Contains("games"))
+                {
+
+                }
+            }
+            else if (line.StartsWith("PUT"))
+            {
+
+            }
+            else
+            {
+                // BAD REQUEST
+            }
         }
+
+
 
         //        /// <summary>
         //        /// Sends back index.html as the response body.
