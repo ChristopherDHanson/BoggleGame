@@ -14,10 +14,10 @@ namespace MyBoggleService
         {
             HttpStatusCode status;
             UserName name = new UserName { Nickname = "Joe" };
-            BoggleService service = new MyBoggleService.BoggleService();
-            Token user = service.Register(name, out status);
-            Console.WriteLine(user.UserToken);
-            Console.WriteLine(status.ToString());
+            BoggleSocket service = new BoggleSocket(60000);
+//            Token user = service.Register(name, out status);
+//            Console.WriteLine(user.UserToken);
+//            Console.WriteLine(status.ToString());
 
             // This is our way of preventing the main thread from
             // exiting while the server is in use
