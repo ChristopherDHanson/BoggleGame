@@ -64,7 +64,7 @@ namespace MyBoggleService
         {
             // Parse thru the requestStr, get relevant data
             StringReader reader = new StringReader(requestStr);
-            string line = reader.Read();
+            string line;
         }
     }
 }
