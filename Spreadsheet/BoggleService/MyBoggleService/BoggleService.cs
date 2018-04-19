@@ -1,10 +1,12 @@
-﻿using System;
+﻿using CustomNetworking;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SqlClient;
 using System.IO;
 using System.Net;
+using System.Text;
 using static System.Net.HttpStatusCode;
 
 /// <summary>

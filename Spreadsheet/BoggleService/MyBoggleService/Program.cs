@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using CustomNetworking;
 
 namespace MyBoggleService
 {
@@ -13,7 +14,7 @@ namespace MyBoggleService
         {
             HttpStatusCode status;
             UserName name = new UserName { Nickname = "Joe" };
-            BoggleService service = new BoggleService();
+            BoggleService service = new MyBoggleService.BoggleService();
             Token user = service.Register(name, out status);
             Console.WriteLine(user.UserToken);
             Console.WriteLine(status.ToString());
