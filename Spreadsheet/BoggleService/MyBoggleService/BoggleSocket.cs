@@ -1,4 +1,5 @@
 ﻿using CustomNetworking;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -64,21 +65,40 @@ namespace MyBoggleService
         private void CallRequest (string requestStr, object payload)
         {
             // Parse thru the requestStr, get relevant data
+            HttpStatusCode status;
             StringReader reader = new StringReader(requestStr);
-            string line = "";
+            string line = reader.ReadLine();
 
             if (line.StartsWith("GET"))
             {
                 if (line.Contains(""))
                 {
-                    GetStatus("", "", out HttpStatusCode status);
+                    GetStatus("", "", out status);
                 }
             }
             else if (line.StartsWith("POST"))
             {
-                if (line.Contains("users"))
+                string[] splitLine = line.Split('/');
+                if (splitLine[2].Equals("users"))
                 {
-
+                    //string gameID = splitLine[3];
+                    while (!line.StartsWith("Content-Length:"))
+                        reader.ReadLine();
+                    splitLine = line.Split(':');
+                    int contentLength;
+                    if (Int32.TryParse(splitLine[1], out contentLength))
+                    {
+                        while (!line.Contains("Nickname"))
+                            reader.ReadLine();
+                        splitLine = line.Split(':');
+                        string nickname = splitLine[1];
+                        UserName nameToPassIn = new UserName();
+                        nameToPassIn.Nickname = nickname;
+                        Token toReturn = Register(nameToPassIn, out status);
+                        string toReturnString = JsonConvert.SerializeObject(toReturn);
+                        string finalResponse = ResponseBuilder(toReturnString, toReturnString.Length, status);
+                        ((SS)payload).BeginSend(finalResponse, null, null);
+                    }
                 }
                 else if (line.Contains("games"))
                 {
