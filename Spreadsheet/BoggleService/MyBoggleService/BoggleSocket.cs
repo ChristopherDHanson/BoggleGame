@@ -67,10 +67,11 @@ namespace MyBoggleService
         private void CallRequest (string requestStr, object payload)
         {
             HttpStatusCode status;
+            string finalResponse;
             // Parse thru the requestStr, get relevant data
-            HttpStatusCode status;
             StringReader reader = new StringReader(requestStr);
             string line = reader.ReadLine();
+            int contentLength;
 
             if (line.StartsWith("GET"))
             {
@@ -94,28 +95,39 @@ namespace MyBoggleService
                 string[] splitLine = line.Split('/');
                 if (splitLine[2].Equals("users"))
                 {
-                    //string gameID = splitLine[3];
                     while (!line.StartsWith("Content-Length:"))
                         reader.ReadLine();
                     splitLine = line.Split(':');
-                    int contentLength;
-                    if (Int32.TryParse(splitLine[1], out contentLength))
+                    if (Int32.TryParse(splitLine[1].Trim(), out contentLength))
                     {
-                        while (!line.Contains("Nickname"))
-                            reader.ReadLine();
-                        splitLine = line.Split(':');
-                        string nickname = splitLine[1];
-                        UserName nameToPassIn = new UserName();
-                        nameToPassIn.Nickname = nickname;
+                        char[] jsonObj = new char[contentLength];
+                        while (!line.Contains("{"))
+                            reader.Read();
+                        reader.Read(jsonObj, 0, contentLength);
+                        UserName nameToPassIn = JsonConvert.DeserializeObject<UserName>(jsonObj.ToString());
                         Token toReturn = Register(nameToPassIn, out status);
                         string toReturnString = JsonConvert.SerializeObject(toReturn);
-                        string finalResponse = ResponseBuilder(toReturnString, toReturnString.Length, status);
+                        finalResponse = ResponseBuilder(toReturnString, toReturnString.Length, status);
                         ((SS)payload).BeginSend(finalResponse, null, null);
                     }
                 }
-                else if (line.Contains("games"))
+                else if (splitLine[2].Equals("games"))
                 {
-
+                    while (!line.StartsWith("Content-Length:"))
+                        reader.ReadLine();
+                    splitLine = line.Split(':');
+                    if (Int32.TryParse(splitLine[1].Trim(), out contentLength))
+                    {
+                        char[] jsonObj = new char[contentLength];
+                        while (!line.Contains("{"))
+                            reader.Read();
+                        reader.Read(jsonObj, 0, contentLength);
+                        TokenTime tempTkTm = JsonConvert.DeserializeObject<TokenTime>(jsonObj.ToString());
+                        GameIDOnly toReturn = Join(tempTkTm, out status);
+                        string toReturnString = JsonConvert.SerializeObject(toReturn);
+                        finalResponse = ResponseBuilder(toReturnString, toReturnString.Length, status);
+                        ((SS)payload).BeginSend(finalResponse, null, null);
+                    }
                 }
             }
             else if (line.StartsWith("PUT"))
@@ -124,7 +136,8 @@ namespace MyBoggleService
             }
             else
             {
-                // BAD REQUEST
+                finalResponse = ResponseBuilder(null, 0, HttpStatusCode.BadRequest);
+                ((SS)payload).BeginSend(finalResponse, null, null);
             }
         }
 
