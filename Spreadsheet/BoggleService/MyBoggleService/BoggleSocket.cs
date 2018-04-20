@@ -22,14 +22,9 @@ namespace MyBoggleService
         private SS clients;
 
         private readonly ReaderWriterLockSlim sync = new ReaderWriterLockSlim();
-        private string fullRequest;
-        private int contentLength;
-
-        private StringReader reader;
-
-        private string fullRequest;
-
+        private string fullRequest = "";
         private int contentLength = 0;
+        private StringReader reader;
 
         public BoggleSocket(int port)
         {
@@ -38,11 +33,7 @@ namespace MyBoggleService
             Encoding e = Encoding.UTF8;
             server = new SSListener(port, e);
             server.Start();
-            fullRequest = "";
-            contentLength = 0;
-
-            fullRequest = "";
-
+            
             server.BeginAcceptSS(ConnectionRequested, null);
         }
 
