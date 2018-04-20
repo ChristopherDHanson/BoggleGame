@@ -19,18 +19,21 @@ namespace MyBoggleService
         private SSListener server;
         private BoggleService BService;
 
-        private List<SS> clients;
+        private SS clients;
 
         private readonly ReaderWriterLockSlim sync = new ReaderWriterLockSlim();
+        private string fullRequest;
+        private int contentLength;
 
         public BoggleSocket(int port)
         {
             BService = new BoggleService();
-            clients = new List<SS>();
 
             Encoding e = Encoding.UTF8;
             server = new SSListener(port, e);
             server.Start();
+            fullRequest = "";
+            contentLength = 0;
 
             server.BeginAcceptSS(ConnectionRequested, null);
         }
@@ -55,13 +58,17 @@ namespace MyBoggleService
             try
             {
                 sync.EnterWriteLock();
-                clients.Add(s);
                 s.BeginReceive(CallRequest, s);
             }
             finally
             {
                 sync.ExitWriteLock();
             }
+        }
+
+        private void ReadLines(string str, object obj)
+        {
+
         }
 
         private void CallRequest (string requestStr, object payload)
@@ -142,7 +149,6 @@ namespace MyBoggleService
                         reader.ReadLine();
 
                     splitLine = line.Split(':');
-                    int contentLength;
 
                     if (Int32.TryParse(splitLine[1], out contentLength))
                     {
@@ -157,7 +163,7 @@ namespace MyBoggleService
                         TokenWord recievedObject = JsonConvert.DeserializeObject<TokenWord>(jSonOb);
                         PlayWord(recievedObject, gameID, out status);
                         String returnStatusString = JsonConvert.SerializeObject(recievedObject);
-                        string finalResponse = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
+                        finalResponse = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
                         ((SS) payload).BeginSend(finalResponse, null, null);
                     }
                 }
@@ -167,7 +173,6 @@ namespace MyBoggleService
                         reader.ReadLine();
 
                     splitLine = line.Split(':');
-                    int contentLength;
 
                     if (Int32.TryParse(splitLine[1], out contentLength))
                     {
@@ -182,7 +187,7 @@ namespace MyBoggleService
                         Token recievedObject = JsonConvert.DeserializeObject<Token>(jSonOb);
                         CancelJoin(recievedObject, out status);
                         String returnStatusString = JsonConvert.SerializeObject(recievedObject);
-                        string finalResponse = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
+                        finalResponse = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
                         ((SS)payload).BeginSend(finalResponse, null, null);
                     }
                 }
