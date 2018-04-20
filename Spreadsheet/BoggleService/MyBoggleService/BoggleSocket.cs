@@ -25,6 +25,12 @@ namespace MyBoggleService
         private string fullRequest;
         private int contentLength;
 
+        private StringReader reader;
+
+        private string fullRequest;
+
+        private int contentLength = 0;
+
         public BoggleSocket(int port)
         {
             BService = new BoggleService();
@@ -34,6 +40,8 @@ namespace MyBoggleService
             server.Start();
             fullRequest = "";
             contentLength = 0;
+
+            fullRequest = "";
 
             server.BeginAcceptSS(ConnectionRequested, null);
         }
@@ -47,6 +55,7 @@ namespace MyBoggleService
             // We obtain the socket corresonding to the connection request.  Notice that we
             // are passing back the IAsyncResult object.
             SS s2 = s;
+            clients = s;
 
             // We ask the server to listen for another connection request.  As before, this
             // will happen on another thread.
@@ -58,7 +67,7 @@ namespace MyBoggleService
             try
             {
                 sync.EnterWriteLock();
-                s.BeginReceive(CallRequest, s);
+                s.BeginReceive(ReadLines, s);
             }
             finally
             {
@@ -66,17 +75,35 @@ namespace MyBoggleService
             }
         }
 
-        private void ReadLines(string str, object obj)
+        private void ReadLines(string str, object payload)
         {
-
+            if (str.Trim().Length > 0 && str.Contains("Content-Length:")) // Content length line
+            {
+                string[] splitLine = str.Split(':');
+                Int32.TryParse(splitLine[1].Trim(), out contentLength);
+                ((SS)payload).BeginReceive(ReadLines, payload);
+            }
+            else if (str.StartsWith("GET") || str.StartsWith("PUT") || str.StartsWith("POST")) // First line
+            {
+                fullRequest += str;
+                ((SS)payload).BeginReceive(ReadLines, payload);
+            }
+            else if (str.Trim().Length == 0 && contentLength > 0) // Time to read JSON
+            {
+                ((SS)payload).BeginReceive(ReadLines, payload, contentLength);
+            }
+            else // Done
+            {
+                HandleRequest(fullRequest, payload);
+            }
         }
 
-        private void CallRequest (string requestStr, object payload)
+        private void HandleRequest (string requestStr, object payload)
         {
             HttpStatusCode status;
             string finalResponse;
             // Parse thru the requestStr, get relevant data
-            StringReader reader = new StringReader(requestStr);
+            reader = new StringReader(requestStr);
             string line = reader.ReadLine();
             int contentLength;
 
@@ -198,6 +225,11 @@ namespace MyBoggleService
                 finalResponse = ResponseBuilder(null, 0, HttpStatusCode.BadRequest);
                 ((SS)payload).BeginSend(finalResponse, null, null);
             }
+        }
+
+        private void NextResponse(string requestStr, object payload)
+        {
+            reader = new StringReader(reader.ReadToEnd() + requestStr);
         }
 
         private string ResponseBuilder(string json, int length, HttpStatusCode status)
