@@ -132,6 +132,60 @@ namespace MyBoggleService
             }
             else if (line.StartsWith("PUT"))
             {
+                string[] splitLine = line.Split('/');
+
+                if (splitLine[2].Equals("games"))
+                {
+                    string gameID = splitLine[3];
+
+                    while (!line.StartsWith("Content-Length:"))
+                        reader.ReadLine();
+
+                    splitLine = line.Split(':');
+                    int contentLength;
+
+                    if (Int32.TryParse(splitLine[1], out contentLength))
+                    {
+                        string jSonOb = "";
+                        char[] temp = new char[contentLength];
+                        while (!reader.Read().Equals("{"))
+                        {
+                            reader.Read(temp, 0, contentLength);
+                            jSonOb = temp.ToString();
+                        }
+
+                        TokenWord recievedObject = JsonConvert.DeserializeObject<TokenWord>(jSonOb);
+                        PlayWord(recievedObject, gameID, out status);
+                        String returnStatusString = JsonConvert.SerializeObject(recievedObject);
+                        string finalResponse = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
+                        ((SS) payload).BeginSend(finalResponse, null, null);
+                    }
+                }
+                else
+                {
+                    while (!line.StartsWith("Content-Length:"))
+                        reader.ReadLine();
+
+                    splitLine = line.Split(':');
+                    int contentLength;
+
+                    if (Int32.TryParse(splitLine[1], out contentLength))
+                    {
+                        string jSonOb = "";
+                        char[] temp = new char[contentLength];
+                        while (!reader.Read().Equals("{"))
+                        {
+                            reader.Read(temp, 0, contentLength);
+                            jSonOb = temp.ToString();
+                        }
+
+                        Token recievedObject = JsonConvert.DeserializeObject<Token>(jSonOb);
+                        CancelJoin(recievedObject, out status);
+                        String returnStatusString = JsonConvert.SerializeObject(recievedObject);
+                        string finalResponse = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
+                        ((SS)payload).BeginSend(finalResponse, null, null);
+                    }
+                }
 
             }
             else
@@ -144,7 +198,7 @@ namespace MyBoggleService
         private string ResponseBuilder(string json, int length, HttpStatusCode status)
         {
             StringBuilder response = new StringBuilder();
-            response.AppendLine("HTTP//1.1 "+status);
+            response.AppendLine("HTTP//1.1 "+(int)status+" "+status);
             response.AppendLine("Content-Length: "+length);
             response.AppendLine("Content-Type: application/json; charset=utf-8");
             response.AppendLine("");
