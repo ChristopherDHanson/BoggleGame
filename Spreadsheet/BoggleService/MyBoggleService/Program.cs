@@ -12,16 +12,23 @@ namespace MyBoggleService
     {
         static void Main()
         {
-            HttpStatusCode status;
-            UserName name = new UserName { Nickname = "Joe" };
-            BoggleSocket service = new BoggleSocket(60000);
-//            Token user = service.Register(name, out status);
-//            Console.WriteLine(user.UserToken);
-//            Console.WriteLine(status.ToString());
+            SSListener server = new SSListener(60000, Encoding.UTF8);
+            server.Start();
+            server.BeginAcceptSS(ConnectionRequested, server);
 
-            // This is our way of preventing the main thread from
-            // exiting while the server is in use
             Console.ReadLine();
+        }
+
+        /// <summary>
+        /// Simple method that sets up the StringSocket and its listener.
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="payload"></param>
+        private static void ConnectionRequested(SS s, object payload)
+        {
+            SSListener server = (SSListener) payload;
+            server.BeginAcceptSS(ConnectionRequested, server);
+            new BoggleSocket(s);
         }
     }
 }

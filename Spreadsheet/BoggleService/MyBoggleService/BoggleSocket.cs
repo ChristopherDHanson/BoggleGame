@@ -8,6 +8,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Json;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -16,230 +17,145 @@ namespace MyBoggleService
 {
     class BoggleSocket
     {
+        //Socket and server objects
         private SSListener server;
+        private SS stringSocket;
         private BoggleService BService;
 
-        private SS clients;
-
-        private readonly ReaderWriterLockSlim sync = new ReaderWriterLockSlim();
-
-        private StringReader reader;
-
-        private string fullRequest;
-
+        //Class variables for determining current request
+        private static readonly Regex contentLengthPattern = new Regex(@"^content-length: (\d+)", RegexOptions.IgnoreCase);
         private int contentLength = 0;
-
-        public BoggleSocket(int port)
+        private string firstLine;
+        
+        public BoggleSocket(SS ss)
         {
             BService = new BoggleService();
-
-            Encoding e = Encoding.UTF8;
-            server = new SSListener(port, e);
-            server.Start();
-
-            fullRequest = "";
-
-            server.BeginAcceptSS(ConnectionRequested, null);
+            this.stringSocket = ss;
+            stringSocket.BeginReceive(ReadLines, stringSocket);
         }
 
         /// <summary>
-        /// This is the callback method that is passed to BeginAcceptSocket.  It is called
-        /// when a connection request has arrived at the server.
+        /// Reads each incoming line and parses out the JSON object along with the first line of the request
         /// </summary>
-        private void ConnectionRequested(SS s, object payload)
-        {
-            // We obtain the socket corresonding to the connection request.  Notice that we
-            // are passing back the IAsyncResult object.
-            SS s2 = s;
-            clients = s;
-
-            // We ask the server to listen for another connection request.  As before, this
-            // will happen on another thread.
-            server.BeginAcceptSS(ConnectionRequested, null);
-
-            // We create a new ClientConnection, which will take care of communicating with
-            // the remote client.  We add the new client to the list of clients, taking 
-            // care to use a write lock.
-            try
-            {
-                sync.EnterWriteLock();
-                s.BeginReceive(ReadLines, s);
-            }
-            finally
-            {
-                sync.ExitWriteLock();
-            }
-        }
-
+        /// <param name="str"></param>
+        /// <param name="payload"></param>
         private void ReadLines(string str, object payload)
         {
-            if (str.Trim().Length > 0 && str.Contains("Content-Length:")) // Content length line
+            if (str.Trim().Length == 0 && contentLength > 0)
             {
-                string[] splitLine = str.Split(':');
-                Int32.TryParse(splitLine[1].Trim(), out contentLength);
+                ((SS)payload).BeginReceive(HandleRequest, payload, contentLength);
+            }
+            else if (str.Trim().Length == 0)
+            {
+                HandleRequest(null, payload);
+            }
+            else if (firstLine != null)
+            {
+                Match m = contentLengthPattern.Match(str);
+                if (m.Success)
+                {
+                    contentLength = int.Parse(m.Groups[1].ToString());
+                }
                 ((SS)payload).BeginReceive(ReadLines, payload);
             }
-            else if (str.StartsWith("GET") || str.StartsWith("PUT") || str.StartsWith("POST")) // First line
+            else
             {
-                fullRequest += str;
-                ((SS)payload).BeginReceive(ReadLines, payload);
-            }
-            else if (str.Trim().Length == 0 && contentLength > 0) // Time to read JSON
-            {
-                ((SS)payload).BeginReceive(ReadLines, payload, contentLength);
-            }
-            else // Done
-            {
-                HandleRequest(fullRequest, payload);
+                firstLine = str;
+                ((SS) payload).BeginReceive(ReadLines, payload);
             }
         }
 
+        /// <summary>
+        /// Handles each request given a string object in JSON format and an active string socket.
+        /// </summary>
+        /// <param name="requestStr"></param>
+        /// <param name="payload"></param>
         private void HandleRequest (string requestStr, object payload)
         {
             HttpStatusCode status;
             string finalResponse;
-            // Parse thru the requestStr, get relevant data
-            reader = new StringReader(requestStr);
-            string line = reader.ReadLine();
-            int contentLength;
 
-            if (line.StartsWith("GET"))
+            if (firstLine.StartsWith("GET"))
             {
-                String[] splitLine = line.Split('/','?');
+                String[] splitLine = firstLine.Split('/','?');
 
                 string isBrief = "";
                 
                 if (splitLine.Length > 2)
-                    isBrief = splitLine[2];
+                {
+                    String[] splitBrief = splitLine[4].Split('=',' ');
+                    isBrief = splitBrief[1];
+                }
 
-                GameStatus returnStatus = GetStatus(splitLine[1], isBrief, out status);
-
+                GameStatus returnStatus = GetStatus(splitLine[3], isBrief, out status);
                 String returnStatusString = JsonConvert.SerializeObject(returnStatus);
-                
                 returnStatusString = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
-
-                ((SS) payload).BeginSend(returnStatusString,null,null);
+                Reset(returnStatusString, payload);
             }
-            else if (line.StartsWith("POST"))
+            else if (firstLine.StartsWith("POST"))
             {
-                string[] splitLine = line.Split('/', ' ');
-                if (splitLine[3].Equals("users"))
+                string[] splitLine = firstLine.Split('/');
+                if (splitLine[2].StartsWith("users"))
                 {
-                    while (!line.Contains("Content-Length:"))
-                    {
-                        line = reader.ReadLine();
-                    }
-                    splitLine = line.Split(':');
-                    if (Int32.TryParse(splitLine[1].Trim(), out contentLength))
-                    {
-                        char[] jsonObj = new char[contentLength];
-                        while (!line.Contains("{"))
-                            reader.Read();
-                        reader.Read(jsonObj, 0, contentLength);
-                        UserName nameToPassIn = JsonConvert.DeserializeObject<UserName>(jsonObj.ToString());
-                        Token toReturn = Register(nameToPassIn, out status);
-                        string toReturnString = JsonConvert.SerializeObject(toReturn);
-                        finalResponse = ResponseBuilder(toReturnString, toReturnString.Length, status);
-                        ((SS)payload).BeginSend(finalResponse, null, null);
-                    }
+                    UserName nameToPassIn = JsonConvert.DeserializeObject<UserName>(requestStr);
+                    Token toReturn = Register(nameToPassIn, out status);
+                    string toReturnString = JsonConvert.SerializeObject(toReturn);
+                    finalResponse = ResponseBuilder(toReturnString, toReturnString.Length, status);
+                    Reset(finalResponse, payload);
                 }
-                else if (splitLine[2].Equals("games"))
+                else if (splitLine[2].StartsWith("games"))
                 {
-                    while (!line.StartsWith("Content-Length:"))
-                    {
-                        line = reader.ReadLine();
-                    }
-                    splitLine = line.Split(':');
-                    if (Int32.TryParse(splitLine[1].Trim(), out contentLength))
-                    {
-                        char[] jsonObj = new char[contentLength];
-                        while (!line.Contains("{"))
-                            reader.Read();
-                        reader.Read(jsonObj, 0, contentLength);
-                        TokenTime tempTkTm = JsonConvert.DeserializeObject<TokenTime>(jsonObj.ToString());
-                        GameIDOnly toReturn = Join(tempTkTm, out status);
-                        string toReturnString = JsonConvert.SerializeObject(toReturn);
-                        finalResponse = ResponseBuilder(toReturnString, toReturnString.Length, status);
-                        ((SS)payload).BeginSend(finalResponse, null, null);
-                    }
+                    TokenTime tempTkTm = JsonConvert.DeserializeObject<TokenTime>(requestStr);
+                    GameIDOnly toReturn = Join(tempTkTm, out status);
+                    string toReturnString = JsonConvert.SerializeObject(toReturn);
+                    finalResponse = ResponseBuilder(toReturnString, toReturnString.Length, status);
+                    Reset(finalResponse, payload);
                 }
             }
-            else if (line.StartsWith("PUT"))
+            else if (firstLine.StartsWith("PUT"))
             {
-                string[] splitLine = line.Split('/');
+                string[] splitLine = firstLine.Split('/');
 
                 if (splitLine[2].Equals("games"))
                 {
-                    string gameID = splitLine[3];
+                    string gameID = splitLine[3].Split(' ')[0];
 
-                    while (!line.StartsWith("Content-Length:"))
-                    {
-                        line = reader.ReadLine();
-                    }
-
-                    splitLine = line.Split(':');
-
-                    if (Int32.TryParse(splitLine[1], out contentLength))
-                    {
-                        string jSonOb = "";
-                        char[] temp = new char[contentLength];
-                        while (!reader.Read().Equals("{"))
-                        {
-                            reader.Read(temp, 0, contentLength);
-                            jSonOb = temp.ToString();
-                        }
-
-                        TokenWord recievedObject = JsonConvert.DeserializeObject<TokenWord>(jSonOb);
-                        PlayWord(recievedObject, gameID, out status);
-                        String returnStatusString = JsonConvert.SerializeObject(recievedObject);
-                        finalResponse = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
-                        ((SS) payload).BeginSend(finalResponse, null, null);
-                    }
+                    TokenWord recievedObject = JsonConvert.DeserializeObject<TokenWord>(requestStr);
+                    ScoreOnly  returnScore = PlayWord(recievedObject, gameID, out status);
+                    String returnStatusString = JsonConvert.SerializeObject(returnScore);
+                    finalResponse = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
+                    Reset(finalResponse, payload);
                 }
                 else
                 {
-                    while (!line.StartsWith("Content-Length:"))
-                    {
-                        line = reader.ReadLine();
-                    }
 
-                    splitLine = line.Split(':');
-
-                    if (Int32.TryParse(splitLine[1], out contentLength))
-                    {
-                        string jSonOb = "";
-                        char[] temp = new char[contentLength];
-                        while (!reader.Read().Equals("{"))
-                        {
-                            reader.Read(temp, 0, contentLength);
-                            jSonOb = temp.ToString();
-                        }
-
-                        Token recievedObject = JsonConvert.DeserializeObject<Token>(jSonOb);
-                        CancelJoin(recievedObject, out status);
-                        String returnStatusString = JsonConvert.SerializeObject(recievedObject);
-                        finalResponse = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
-                        ((SS)payload).BeginSend(finalResponse, null, null);
-                    }
+                    Token recievedObject = JsonConvert.DeserializeObject<Token>(requestStr);
+                    CancelJoin(recievedObject, out status);
+                    String returnStatusString = JsonConvert.SerializeObject(recievedObject);
+                    finalResponse = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
+                    Reset(finalResponse, payload);
                 }
-
             }
             else
             {
                 finalResponse = ResponseBuilder(null, 0, HttpStatusCode.BadRequest);
-                ((SS)payload).BeginSend(finalResponse, null, null);
+                ((SS)payload).BeginSend(finalResponse, (x, y) => { ((SS)payload).Shutdown(SocketShutdown.Both); }, null);
+                firstLine = null;
+                contentLength = 0;
             }
         }
 
-        private void NextResponse(string requestStr, object payload)
-        {
-            reader = new StringReader(reader.ReadToEnd() + requestStr);
-        }
-
+        /// <summary>
+        /// Helper method to assemble responses.
+        /// </summary>
+        /// <param name="json"></param>
+        /// <param name="length"></param>
+        /// <param name="status"></param>
+        /// <returns></returns>
         private string ResponseBuilder(string json, int length, HttpStatusCode status)
         {
             StringBuilder response = new StringBuilder();
-            response.AppendLine("HTTP//1.1 "+(int)status+" "+status);
+            response.AppendLine("HTTP/1.1 "+(int)status+" "+status);
             response.AppendLine("Content-Length: "+length);
             response.AppendLine("Content-Type: application/json; charset=utf-8");
             response.AppendLine("");
@@ -308,6 +224,18 @@ namespace MyBoggleService
         private GameStatus GetStatus(string GameID, string isBrief, out HttpStatusCode status)
         { 
             return BService.GetStatus(GameID, isBrief, out status);
+        }
+
+        /// <summary>
+        /// Helper method to complete sends and reset needed variables.
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="payload"></param>
+        private void Reset(String s, Object payload)
+        {
+            ((SS)payload).BeginSend(s, (x, y) => { ((SS)payload).Shutdown(SocketShutdown.Both); }, null);
+            firstLine = null;
+            contentLength = 0;
         }
     }
 }
