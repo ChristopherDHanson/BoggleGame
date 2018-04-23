@@ -17,84 +17,28 @@ namespace MyBoggleService
 {
     class BoggleSocket
     {
+        //Socket and server objects
         private SSListener server;
+        private SS stringSocket;
         private BoggleService BService;
 
-        private SS clients;
-
-        private readonly ReaderWriterLockSlim sync = new ReaderWriterLockSlim();
-        private string fullRequest = "";
-        private int contentLength = 0;
-        private StringReader reader;
-
-        private string firstLine;
+        //Class variables for determining current request
         private static readonly Regex contentLengthPattern = new Regex(@"^content-length: (\d+)", RegexOptions.IgnoreCase);
-
-        public BoggleSocket(int port)
+        private int contentLength = 0;
+        private string firstLine;
+        
+        public BoggleSocket(SS ss)
         {
             BService = new BoggleService();
-
-            Encoding e = Encoding.UTF8;
-            server = new SSListener(port, e);
-            server.Start();
-            
-            server.BeginAcceptSS(ConnectionRequested, null);
+            this.stringSocket = ss;
+            stringSocket.BeginReceive(ReadLines, stringSocket);
         }
 
         /// <summary>
-        /// This is the callback method that is passed to BeginAcceptSocket.  It is called
-        /// when a connection request has arrived at the server.
+        /// Reads each incoming line and parses out the JSON object along with the first line of the request
         /// </summary>
-        private void ConnectionRequested(SS s, object payload)
-        {
-            // We obtain the socket corresonding to the connection request.  Notice that we
-            // are passing back the IAsyncResult object.
-            SS s2 = s;
-            clients = s;
-
-            // We ask the server to listen for another connection request.  As before, this
-            // will happen on another thread.
-            server.BeginAcceptSS(ConnectionRequested, null);
-
-            // We create a new ClientConnection, which will take care of communicating with
-            // the remote client.  We add the new client to the list of clients, taking 
-            // care to use a write lock.
-            try
-            {
-                sync.EnterWriteLock();
-                s.BeginReceive(ReadLines, s);
-            }
-            finally
-            {
-                sync.ExitWriteLock();
-            }
-        }
-
-        //        private void ReadLines(string str, object payload)
-        //        {
-        //            if (str.Trim().Length > 0 && str.Contains("Content-Length:")) // Content length line
-        //            {
-        //                string[] splitLine = str.Split(':');
-        //                Int32.TryParse(splitLine[1].Trim(), out contentLength);
-        //                ((SS)payload).BeginReceive(ReadLines, payload);
-        //            }
-        //            else if (str.StartsWith("GET") || str.StartsWith("PUT") || str.StartsWith("POST")) // First line
-        //            {
-        //                fullRequest += str;
-        //                ((SS)payload).BeginReceive(ReadLines, payload);
-        //            }
-        //            else if (str.Trim().Length == 0 && contentLength > 0) // Time to read JSON
-        //            {
-        //                ((SS)payload).BeginReceive(ReadLines, payload, contentLength);
-        //            }
-        //            else // Done
-        //            {
-        //                fullRequest += str;
-        //                HandleRequest(fullRequest, payload);
-        //            }
-        //        }
-
-
+        /// <param name="str"></param>
+        /// <param name="payload"></param>
         private void ReadLines(string str, object payload)
         {
             if (str.Trim().Length == 0 && contentLength > 0)
@@ -121,14 +65,15 @@ namespace MyBoggleService
             }
         }
 
+        /// <summary>
+        /// Handles each request given a string object in JSON format and an active string socket.
+        /// </summary>
+        /// <param name="requestStr"></param>
+        /// <param name="payload"></param>
         private void HandleRequest (string requestStr, object payload)
         {
             HttpStatusCode status;
             string finalResponse;
-            // Parse thru the requestStr, get relevant data
-//            reader = new StringReader(requestStr);
-//            string line = reader.ReadLine();
-//            int contentLength;
 
             if (firstLine.StartsWith("GET"))
             {
@@ -143,36 +88,20 @@ namespace MyBoggleService
                 }
 
                 GameStatus returnStatus = GetStatus(splitLine[3], isBrief, out status);
-
                 String returnStatusString = JsonConvert.SerializeObject(returnStatus);
-                
                 returnStatusString = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
-
-                ((SS)payload).BeginSend(returnStatusString, (x, y) => { ((SS)payload).Shutdown(SocketShutdown.Both); }, null);
-                firstLine = null;
-                contentLength = 0;
+                Reset(returnStatusString, payload);
             }
             else if (firstLine.StartsWith("POST"))
             {
                 string[] splitLine = firstLine.Split('/');
                 if (splitLine[2].StartsWith("users"))
                 {
-//                    while (!line.StartsWith("Content-Length:"))
-//                        reader.ReadLine();
-//                    splitLine = line.Split(':');
-//                    char[] jsonObj = new char[contentLength];
-//                    while (!line.Contains("{"))
-//                        reader.Read();
-//                    reader.Read(jsonObj, 0, contentLength);
-//                    jsonObj = requestStr.ToCharArray();
-
                     UserName nameToPassIn = JsonConvert.DeserializeObject<UserName>(requestStr);
                     Token toReturn = Register(nameToPassIn, out status);
                     string toReturnString = JsonConvert.SerializeObject(toReturn);
                     finalResponse = ResponseBuilder(toReturnString, toReturnString.Length, status);
-                    ((SS)payload).BeginSend(finalResponse, (x,y) => { ((SS)payload).Shutdown(SocketShutdown.Both); }, null);
-                    firstLine = null;
-                    contentLength = 0;
+                    Reset(finalResponse, payload);
                 }
                 else if (splitLine[2].StartsWith("games"))
                 {
@@ -180,9 +109,7 @@ namespace MyBoggleService
                     GameIDOnly toReturn = Join(tempTkTm, out status);
                     string toReturnString = JsonConvert.SerializeObject(toReturn);
                     finalResponse = ResponseBuilder(toReturnString, toReturnString.Length, status);
-                    ((SS)payload).BeginSend(finalResponse, (x, y) => { ((SS)payload).Shutdown(SocketShutdown.Both); }, null);
-                    firstLine = null;
-                    contentLength = 0;
+                    Reset(finalResponse, payload);
                 }
             }
             else if (firstLine.StartsWith("PUT"))
@@ -192,54 +119,21 @@ namespace MyBoggleService
                 if (splitLine[2].Equals("games"))
                 {
                     string gameID = splitLine[3].Split(' ')[0];
-//
-//                    while (!line.StartsWith("Content-Length:"))
-//                        reader.ReadLine();
-//
-//                    splitLine = line.Split(':');
-//
-//                    if (Int32.TryParse(splitLine[1], out contentLength))
-//                    {
-//                        string jSonOb = "";
-//                        char[] temp = new char[contentLength];
-//                        while (!reader.Read().Equals("{"))
-//                        {
-//                            reader.Read(temp, 0, contentLength);
-//                            jSonOb = temp.ToString();
-//                        }
 
                     TokenWord recievedObject = JsonConvert.DeserializeObject<TokenWord>(requestStr);
                     ScoreOnly  returnScore = PlayWord(recievedObject, gameID, out status);
                     String returnStatusString = JsonConvert.SerializeObject(returnScore);
                     finalResponse = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
-                    ((SS)payload).BeginSend(finalResponse, (x, y) => { ((SS)payload).Shutdown(SocketShutdown.Both); }, null);
-                    firstLine = null;
-                    contentLength = 0;
+                    Reset(finalResponse, payload);
                 }
                 else
                 {
-//                    while (!line.StartsWith("Content-Length:"))
-//                        reader.ReadLine();
-//
-//                    splitLine = line.Split(':');
-//
-//                    if (Int32.TryParse(splitLine[1], out contentLength))
-//                    {
-//                        string jSonOb = "";
-//                        char[] temp = new char[contentLength];
-//                        while (!reader.Read().Equals("{"))
-//                        {
-//                            reader.Read(temp, 0, contentLength);
-//                            jSonOb = temp.ToString();
-//                        }
 
                     Token recievedObject = JsonConvert.DeserializeObject<Token>(requestStr);
                     CancelJoin(recievedObject, out status);
                     String returnStatusString = JsonConvert.SerializeObject(recievedObject);
                     finalResponse = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
-                    ((SS)payload).BeginSend(finalResponse, (x, y) => { ((SS)payload).Shutdown(SocketShutdown.Both); }, null);
-                    firstLine = null;
-                    contentLength = 0;
+                    Reset(finalResponse, payload);
                 }
             }
             else
@@ -251,11 +145,13 @@ namespace MyBoggleService
             }
         }
 
-        private void NextResponse(string requestStr, object payload)
-        {
-            reader = new StringReader(reader.ReadToEnd() + requestStr);
-        }
-
+        /// <summary>
+        /// Helper method to assemble responses.
+        /// </summary>
+        /// <param name="json"></param>
+        /// <param name="length"></param>
+        /// <param name="status"></param>
+        /// <returns></returns>
         private string ResponseBuilder(string json, int length, HttpStatusCode status)
         {
             StringBuilder response = new StringBuilder();
@@ -328,6 +224,18 @@ namespace MyBoggleService
         private GameStatus GetStatus(string GameID, string isBrief, out HttpStatusCode status)
         { 
             return BService.GetStatus(GameID, isBrief, out status);
+        }
+
+        /// <summary>
+        /// Helper method to complete sends and reset needed variables.
+        /// </summary>
+        /// <param name="s"></param>
+        /// <param name="payload"></param>
+        private void Reset(String s, Object payload)
+        {
+            ((SS)payload).BeginSend(s, (x, y) => { ((SS)payload).Shutdown(SocketShutdown.Both); }, null);
+            firstLine = null;
+            contentLength = 0;
         }
     }
 }
