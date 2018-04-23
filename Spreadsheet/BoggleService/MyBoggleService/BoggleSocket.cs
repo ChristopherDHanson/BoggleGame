@@ -1,4 +1,6 @@
-﻿using CustomNetworking;
+﻿// Authors Bryce Hansen, Christopher Hanson for CS 3500, April 23, 2018
+
+using CustomNetworking;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -11,7 +13,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace MyBoggleService
 {
@@ -27,6 +28,10 @@ namespace MyBoggleService
         private int contentLength = 0;
         private string firstLine;
         
+        /// <summary>
+        /// Starts the server; sets up connection on specifies SS; starts receiving, using ReadLines as callback
+        /// </summary>
+        /// <param name="ss"></param>
         public BoggleSocket(SS ss)
         {
             BService = new BoggleService();
@@ -87,6 +92,7 @@ namespace MyBoggleService
                     isBrief = splitBrief[1];
                 }
 
+                // Gets status of specified game; either brief or not
                 GameStatus returnStatus = GetStatus(splitLine[3], isBrief, out status);
                 String returnStatusString = JsonConvert.SerializeObject(returnStatus);
                 returnStatusString = ResponseBuilder(returnStatusString, returnStatusString.Length, status);
@@ -97,6 +103,7 @@ namespace MyBoggleService
                 string[] splitLine = firstLine.Split('/');
                 if (splitLine[2].StartsWith("users"))
                 {
+                    // Registers new user by calling BoggleServer.Register via BoggleSocket.Register
                     UserName nameToPassIn = JsonConvert.DeserializeObject<UserName>(requestStr);
                     Token toReturn = Register(nameToPassIn, out status);
                     string toReturnString = JsonConvert.SerializeObject(toReturn);
@@ -105,6 +112,7 @@ namespace MyBoggleService
                 }
                 else if (splitLine[2].StartsWith("games"))
                 {
+                    // Joins game by callind BoggleServer.Join via BoggleSocker.Join
                     TokenTime tempTkTm = JsonConvert.DeserializeObject<TokenTime>(requestStr);
                     GameIDOnly toReturn = Join(tempTkTm, out status);
                     string toReturnString = JsonConvert.SerializeObject(toReturn);
@@ -120,6 +128,7 @@ namespace MyBoggleService
                 {
                     string gameID = splitLine[3].Split(' ')[0];
 
+                    // Plays word in specified game by calling BogglerServer.PlayWord via BoggleSocket.PlayWord
                     TokenWord recievedObject = JsonConvert.DeserializeObject<TokenWord>(requestStr);
                     ScoreOnly  returnScore = PlayWord(recievedObject, gameID, out status);
                     String returnStatusString = JsonConvert.SerializeObject(returnScore);
@@ -128,7 +137,7 @@ namespace MyBoggleService
                 }
                 else
                 {
-
+                    // Attempts to cancel join request by calling BoggleServer.CancelJoin via BoggleSocket.CancelJoin
                     Token recievedObject = JsonConvert.DeserializeObject<Token>(requestStr);
                     CancelJoin(recievedObject, out status);
                     String returnStatusString = JsonConvert.SerializeObject(recievedObject);
@@ -138,6 +147,7 @@ namespace MyBoggleService
             }
             else
             {
+                // Bad request; assemble response, send it back
                 finalResponse = ResponseBuilder(null, 0, HttpStatusCode.BadRequest);
                 ((SS)payload).BeginSend(finalResponse, (x, y) => { ((SS)payload).Shutdown(SocketShutdown.Both); }, null);
                 firstLine = null;

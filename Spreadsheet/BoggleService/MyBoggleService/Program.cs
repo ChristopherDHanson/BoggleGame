@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Authors Bryce Hansen, Christopher Hanson for CS 3500, April 23, 2018
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
