@@ -127,9 +127,7 @@ namespace MyBoggleService
                 {
                     while (!line.Contains("Content-Length:"))
                     {
-                        ((SS)payload).BeginReceive(NextResponse, null);
-                        if (!line.Contains("users"))
-                            line = reader.ReadLine();
+                        line = reader.ReadLine();
                     }
                     splitLine = line.Split(':');
                     if (Int32.TryParse(splitLine[1].Trim(), out contentLength))
@@ -149,7 +147,6 @@ namespace MyBoggleService
                 {
                     while (!line.StartsWith("Content-Length:"))
                     {
-                        ((SS)payload).BeginReceive(NextResponse, null);
                         line = reader.ReadLine();
                     }
                     splitLine = line.Split(':');
@@ -177,7 +174,6 @@ namespace MyBoggleService
 
                     while (!line.StartsWith("Content-Length:"))
                     {
-                        ((SS)payload).BeginReceive(NextResponse, null);
                         line = reader.ReadLine();
                     }
 
@@ -204,7 +200,6 @@ namespace MyBoggleService
                 {
                     while (!line.StartsWith("Content-Length:"))
                     {
-                        ((SS)payload).BeginReceive(NextResponse, null);
                         line = reader.ReadLine();
                     }
 
